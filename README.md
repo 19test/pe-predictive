@@ -42,3 +42,32 @@ If we aim to ultimately compare classifiers over data sets, the recommended meth
       1.Friedman test followed by post-hoc Hommel test for multiple classifiers over multiple sets
 
       McNemar Test for 2 classifiers over 1 set
+
+## Data Notes
+
+### Organization
+The data_*.csv files are currently being used for @mlungren to randomly select and annotate. We need to figure out a different/better way for this task, likely starting with where the data originates, and what the intended use is. Keeping the classiifer results, and the raw data (reports), and the other various meta data in one massive file makes me very anxious and is not a suitable long term solution for this kind of work.
+
+### Column Values
+This is my best understanding of the meta-data fields:
+
+- pat_deid: this is a deidentified patient ID. I would like to eventually know where and how this is generated, and where it links to, but this level of understanding is suitable for now.
+- order_deid: is the id of the order, the idea being that one patient could have multiple orders. Question: what if a patient has more than one, if the reports are different is the idea that it's not an issue?
+- rad_report: this is literally the entire radiologist report in a column.
+- impression: this is an extracted portion of the report. We should note this is done programatically, and while probably most of them are OK, there could be a subset with errors.
+- batch: is the batch number mentioned above. There are currently 4.
+- disease_state_label, 
+- uncertainty_label, 
+- quality_label, 
+- historicity_label: these are manually labeled annotations by @mlungren
+- disease_state_prob,
+- uncertainty_prob,
+- quality_prob,
+- historicity_prob: these are produced by Yu's classifier. The code is (somewhere) in ipython notebooks.
+- disease_PEfinder: is the PEfinder (Chapman) being run on these datasets. The accuracy of this has not been assessed, but this would be useful for some future paper.
+- looking_for_PE?: Was the purpose of the report to look for PE (1), or was it an indicental finding (0).
+- train=2/test=1: This is a column to indicate that some of the records (2) were used for training, and some for testing (1).
+- disease_probability_test: this is the outcome of the model building with the labels specified by train=2/test=1
+- probability_looking_for_PE: Another of Yu's models to predict if the exam was done looking for PE, Yu noted this performed very well (i.e., we can predict if the assessment was done to specifically look for PE based on the report alone)
+ 
+
