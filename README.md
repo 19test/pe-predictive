@@ -24,7 +24,7 @@ A larger goal is to generate a dataset that we can do deep learning on radiology
 ### Improvements and Things to Watch out For
 - The optimization is being done on accuracy (this was how Chapman did it) however this can be improved by using AUC (area under the curve) or F-statistic.
 - Batches 1 and 2 are NOT independent. This means we cannot train on 2 and then test on 1. 2 is a biased sample, and it can be good for training, as long as 1 is not the test.
-- finite population correction factor: Yu mentioned this is something like 0.01*population size. The general idea is that if the population is finite, if we take a sample that is too large it becomes biased. For this sample, this number is around ~5-6K. We can likely do one more batch and do ok, but more than that, we need to take this into account.
+- finite population correction factor: Yu mentioned this is something like 0.05*population size. The general idea is that if the population is finite, if we take a sample that is too large it becomes biased. For this sample, this number is around ~5-6K. We can likely do one more batch and do ok, but more than that, we need to take this into account.
 
 ## Implementation/Model Notes
 Yu used:
