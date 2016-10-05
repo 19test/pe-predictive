@@ -1,13 +1,6 @@
 # Chapman Docker
 
-This is a Docker image that will start a Jupyter notebook to run/show the Chapman analysis. Note that I have packaged all data and dependencies into this image, meaning any urls to download data are removed, and the data is included with this repo. Eg a url that looked like this:
-
-      https://raw.githubusercontent.com/chapmanbe/pyConTextNLP/master/KB/classificationRules3.csv
-
-is now
-
-      [data/classificationRules3.csv](notebooks/data/classificationRules3.csv)
-
+This is a Docker image that will start a Jupyter notebook to run/show the Chapman analysis. Note that I have packaged all data and dependencies into this image, meaning for any urls to download data, the data is also included with this repo in the [notebooks/data/](notebooks/data/) folder.
 
 Packages that need to be installed (e.g. seaborn and radnlp) have versions specified in case a future change breaks this code, you can see this in the top section of the [Dockerfile](Dockerfile).
 
