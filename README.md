@@ -1,5 +1,9 @@
 # Prediction of Pulmonary Embolism
 
+## Folder Organization
+
+- [chapman](chapman): includes reproduction of Chapman PE prediction methods.
+
 ## Background
 
 ### PE Finder: a Rule-Based Classifier
