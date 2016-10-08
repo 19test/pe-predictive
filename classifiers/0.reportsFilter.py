@@ -19,11 +19,11 @@ rawData = pandas.read_csv("data/final_3.csv")
 
 #rawData.columns
 # ['pat_deid', 'order_deid', 'days_age_at_ct', 'rad_report', 'impression',
-#       'batch', 'disease_state_label', 'uncertainty_label', 'quality_label',
-#       'historicity_label', 'disease_state_prob', 'uncertainty_prob',
-#       'quality_prob', 'historicity_prob', 'disease_PEfinder',
-#       'looking_for_PE?', 'train=2/test=1', 'disease_probability_test',
-#       'probability_looking_for_PE'],
+#  'batch', 'disease_state_label', 'uncertainty_label', 'quality_label',
+#  'historicity_label', 'disease_state_prob', 'uncertainty_prob',
+#  'quality_prob', 'historicity_prob', 'disease_PEfinder',
+#  'looking_for_PE?', 'train=2/test=1', 'disease_probability_test',
+#  'probability_looking_for_PE'],
 
 # We don't care about the latter columns that were built from a previous model - let's filter
 # down to @mlungren's annotations, and the original reports

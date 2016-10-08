@@ -21,9 +21,9 @@ ENV LC_CTYPE en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
 ENV CODE_HOME /code
 RUN easy_install3 --upgrade gensim
-RUN apt-get install python3-pandas
-RUN apt-get install python3-numpy
-RUN apt-get install python3-scipy
+RUN apt-get install -y python3-pandas
+RUN apt-get install -y python3-numpy
+RUN apt-get install -y python3-scipy
 RUN pip3 install scikit-learn
 RUN pip3 install wordfish
 RUN python3 -c "import nltk; nltk.download('all')"

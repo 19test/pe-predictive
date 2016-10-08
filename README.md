@@ -56,9 +56,20 @@ Then run and shell into the image:
 
       docker run -it vanessa/pe-predictive bash
 
+If you want to have data also appear on your local machine somewhere, be sure to map a volume from the container:
+
+      docker run -it -v results:/tmp vanessa/pe-predictive
+
 The working directory will be the folder `/code` and within this folder you will see the same files as on your local machine. All python dependencies are installed, and `python3` is aliased to the `python` command, and `ipython3` to `ipython`, and `pip3` to `pip`. Finally, an environmental variable called `CODE_HOME` is set to make sure we don't have path errors in our scripts.
 
-** currently writing scripts **
+For details on the code, see the [README.md](classifiers/README.md) included with it.
+
+If you forget to add a volume when you run the container (oups) you can copy data from the container to your local machine:
+
+      docker cp 74feea5941b5:/code/data/filtered_4_batches.tsv $PWD/data
+      docker cp 74feea5941b5:/code/data/impression_lr_confusions.pkl $PWD/data
+
+Where the id of the container is obtained with `docker -ps`
 
 ## Data Notes
 
