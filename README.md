@@ -30,7 +30,7 @@ A larger goal is to generate a dataset that we can do deep learning on radiology
 - Batches 1 and 2 are NOT independent. This means we cannot train on 2 and then test on 1. 2 is a biased sample, and it can be good for training, as long as 1 is not the test.
 - finite population correction factor: Yu mentioned this is something like 0.05*population size. The general idea is that if the population is finite, if we take a sample that is too large it becomes biased. For this sample, this number is around ~5-6K. We can likely do one more batch and do ok, but more than that, we need to take this into account.
 
-## Implementation/Model Notes
+## Yu's Implementation/Model Notes
 Yu used:
 
       sklearn.feature_extraction.text.CountVectorizer
@@ -46,6 +46,19 @@ If we aim to ultimately compare classifiers over data sets, the recommended meth
       1.Friedman test followed by post-hoc Hommel test for multiple classifiers over multiple sets
 
       McNemar Test for 2 classifiers over 1 set
+
+## Vanessa's Implementation / Modes Notes
+The environment can be built for the scripts in [classifiers](classifiers) using Docker:
+
+      docker build -t vanessa/pe-predictive .
+
+Then run and shell into the image:
+
+      docker run -it vanessa/pe-predictive bash
+
+The working directory will be the folder `/code` and within this folder you will see the same files as on your local machine. All python dependencies are installed, and `python3` is aliased to the `python` command, and `ipython3` to `ipython`, and `pip3` to `pip`. Finally, an environmental variable called `CODE_HOME` is set to make sure we don't have path errors in our scripts.
+
+** currently writing scripts **
 
 ## Data Notes
 
