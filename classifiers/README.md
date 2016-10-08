@@ -4,7 +4,7 @@ This will be a set of preliminary analyses for me to get familiar with the data,
 
       docker run -it vanessa/pe-predictive
 
-The image (should not be) on Docker Hub, and runnable without needing to build it from this repo.
+You can of course install on your local machine, but then you will need to install dependencies (not recommended).
 
 ## Overview
 This small analysis will first convert the radiology reports/impressions to a vector representation using [doc2vec](http://radimrehurek.com/gensim/models/doc2vec.html), and then use logistic regression on training and holdout (test) sets to assess the predictive ability of the reports/impressions. I chose doc2vec for several reasons:
@@ -21,14 +21,39 @@ This small analysis will first convert the radiology reports/impressions to a ve
 The script [0.reportsFilter.py](0.reportsFilter.py) simply loads the data (from what I have, the `final_3.csv`). It summarizes counts for each of the class labels, along with columns provided and shows the change in size before and after filtering. The final task is to save a filtered dataset from the raw data, which is `../data/filtered_reports.tsv` (not provided in this repo).
 
 **1.doc2vec.py**
-The script [1.doc2vec.py](1.doc2vec.py) has the following sections:
+The script [1.doc2vec.py](1.doc2vec.py) (mostly self documented) uses logistic regression on the doc2vec vectors to see if we can distinguish PE / not PE. The performance was terrible (context of the words is not the key to figuring out the diagnosis, likely) but I thought it was interesting that using the whole report had better performance than just the impression section. Specifically, when we add up the diagonal of the normalized confusion matrices (the sum of the ones we got right, each representing a percentage of all the reports):
+
+Here is logistic regression for removing and not removing stop words:
+ 
+### Impressions
+
+	# numpy.trace(confusions['batch-1-1']['norm-batch-1-1'])
+	# 0.60207100591715978
+
+	# numpy.trace(confusions['batch-0-1']['norm-batch-0-1'])
+	# 0.59334298118668594
+
+	# Ouch! Does not work!
 
 
-## Improvements/Thinking
+### Entire reports
+
+
+	# numpy.trace(confusions['batch-1-1']['norm-batch-1-1'])
+	# 0.6758321273516642
+
+	# numpy.trace(confusions['batch-0-1']['norm-batch-0-1'])
+	# 0.66714905933429813
+
+
+It is interesting that we do better when we have the entire report. We probably would want to first start from what Yu was doing (I'm not totally sure, @mlungren will hopefully give insight), and then try to improve upon that. What we can do is different visualizations (both of data and of misclassified cases) to improve some classifier.
+
+
+## Long Term Goals
+- Obviously, build a better machine learning classifier
 - It is not adequate to start with an already pre-processed data file - we will talk about the entire pipeline from data collection through the end of analysis. We want to be able to acquire new data and feed it seamlessly into this pipeline with minimal manual pain.
-
--    # NOTE: we could also look at the vectors for the groups above, might be interesting
 
 
 ## Questions I have
 - Yu mentioned that the batches could be used in sets for training/testing, and not to use 1 and 2 as they are not independent of one another. My larger question is why the data should be separated into batches to begin with? In other words, why not just combine data that is not redundant (sets 2,3,4) and then do 10 fold cross validation? 
+- The doc2vec can also produce mean vectors for groups of things - we could probably make a classifier to predict larger things about the report.

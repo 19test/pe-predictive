@@ -128,11 +128,13 @@ def predict_logisticRegression(train,test):
     return confusion    
 
 
-def predictPE(inputDataLabel):
+def predictPE(inputDataLabel,model_type):
     '''predictPE is a massive wrapper to run all iterations of training and testing using some input label.
     (eg, impression or report). A dictionary structure of confusion matrices is returned, include a summed
     and normalized version to represent the success of the entire batch. Note that this function is dependent
     on some of the global variables defined above (not proper, but will work for this batch script :))
+    :param model_type: right now I just tried "logistic_regression"
+    :param inputDataLabel: should be one of "impression" or "rad_report"
     '''
     confusions = dict()
     count=1
@@ -212,6 +214,9 @@ def predictPE(inputDataLabel):
                     model.min_alpha = model.alpha # fix the learning rate, no decay
                     model.train(labeledDocs)
 
+                # This was done manually during testing, for impressions
+                #model.save('data/model.doc2vec')
+                
                 # Now let's create an object with data frames with training and testing data and labels
                 vecs = get_vectors(model=model,
                                    words_list=words_list,
@@ -221,8 +226,9 @@ def predictPE(inputDataLabel):
                 # df['test']  .... ['labels'] <-- df with columns disease_state_label,CLASS, and index as patid
                 #                  ['vectors'] <-- index is also patid
 
-                confusion = predict_logisticRegression(train=vecs['train'],
-                                                       test=vecs['test'])
+                if model_type == "logistic_regression":
+                    confusion = predict_logisticRegression(train=vecs['train'],
+                                                           test=vecs['test'])
                 count +=1    
                 batchconfusions[uid] = confusion
                 summed_confusion += confusion
@@ -315,9 +321,11 @@ lookup = {"definitely negative":0.0,
           "probably negative":0.25,
           "probably positive":0.75}
 
-print("Preparing to do linear regression models for impression reports...")
+print("Preparing to do logistic regression models for impression reports...")
 
-confusions = predictPE(inputDataLabel='impression')
+confusions = predictPE(inputDataLabel='impression',
+                       model_type='logistic_regression')
+
 pickle.dump(confusions,open("data/impression_lr_confusions.pkl","wb"))
 # numpy.trace(confusions['batch-1-1']['norm-batch-1-1'])
 # 0.60207100591715978
@@ -327,14 +335,26 @@ pickle.dump(confusions,open("data/impression_lr_confusions.pkl","wb"))
 
 # Ouch! Does not work!
 
+
 ####################################################
 # Analysis 2: Use reports to classify PE 
 #   - using logistic regression on doc2vec vectors
 ####################################################
 
-print("Preparing to do linear regression models for entirety of reports...")
-confusions = predictPE(inputDataLabel='rad_report')
+### LOGISTIC REGRESSION
+
+print("Preparing to do logistic regression models for entirety of reports...")
+
+confusions = predictPE(inputDataLabel='rad_report',
+                       model_type='logistic_regression')
 pickle.dump(confusions,open("data/report_lr_confusions.pkl","wb"))
+# numpy.trace(confusions['batch-1-1']['norm-batch-1-1'])
+# 0.6758321273516642
+
+# numpy.trace(confusions['batch-0-1']['norm-batch-0-1'])
+# 0.66714905933429813
+# interesting! We do better when we have the whole report.
+# This sort of makes sense for doc2vec
 
 
 
@@ -342,4 +362,5 @@ pickle.dump(confusions,open("data/report_lr_confusions.pkl","wb"))
 # Analysis 3: Compare results with PEFinder 
 ####################################################
 
+# Not worth doing this, we did terrible!
 peFinder = data["disease_PEfinder"]
