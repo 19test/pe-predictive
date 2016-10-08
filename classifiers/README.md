@@ -21,7 +21,7 @@ This small analysis will first convert the radiology reports/impressions to a ve
 The script [0.reportsFilter.py](0.reportsFilter.py) simply loads the data (from what I have, the `final_3.csv`). It summarizes counts for each of the class labels, along with columns provided and shows the change in size before and after filtering. The final task is to save a filtered dataset from the raw data, which is `../data/filtered_reports.tsv` (not provided in this repo).
 
 **1.doc2vec.py**
-The script [1.doc2vec.py](1.doc2vec.py) (mostly self documented) uses logistic regression on the doc2vec vectors to see if we can distinguish PE / not PE. The performance was terrible (context of the words is not the key to figuring out the diagnosis, likely) but I thought it was interesting that using the whole report had better performance than just the impression section. Specifically, when we add up the diagonal of the normalized confusion matrices (the sum of the ones we got right, each representing a percentage of all the reports):
+The script [1.doc2Vec.py](1.doc2Vec.py) (mostly self documented) uses logistic regression on the doc2vec vectors to see if we can distinguish PE / not PE. The performance was terrible (context of the words is not the key to figuring out the diagnosis, likely) but I thought it was interesting that using the whole report had better performance than just the impression section. Specifically, when we add up the diagonal of the normalized confusion matrices (the sum of the ones we got right, each representing a percentage of all the reports):
 
 Here is logistic regression for removing and not removing stop words:
  
