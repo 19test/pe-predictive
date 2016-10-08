@@ -28,9 +28,11 @@ RUN pip3 install scikit-learn
 RUN pip3 install wordfish
 RUN python3 -c "import nltk; nltk.download('all')"
 
-RUN alias python='python3'
-RUN alias ipython='ipython3'
-RUN alias pip='pip3'
+# Add aliases to .bashrc to not need to specify python3
+RUN echo "alias python='python3'" >> ~/.bashrc
+RUN echo "alias ipython='ipython3'" >> ~/.bashrc
+RUN echo "alias pip='pip3'" >> ~/.bashrc
+
 RUN mkdir /code
 WORKDIR /code
 ADD . /code/

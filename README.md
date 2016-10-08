@@ -60,7 +60,7 @@ If you want to have data also appear on your local machine somewhere, be sure to
 
       docker run -it -v results:/tmp vanessa/pe-predictive
 
-The working directory will be the folder `/code` and within this folder you will see the same files as on your local machine. All python dependencies are installed, and `python3` is aliased to the `python` command, and `ipython3` to `ipython`, and `pip3` to `pip`. Finally, an environmental variable called `CODE_HOME` is set to make sure we don't have path errors in our scripts.
+The working directory will be the folder `/code` and within this folder you will see the same files as on your local machine. All python dependencies are installed, and `python3` is aliased to the `python` command, `ipython3` to `ipython`, and `pip3` to `pip`. When you use `ipython` and need to paste, the paste magic (`%paste`) will not work, but you can accomplish the same thing with `%cpaste` followed by CONTROL+D. Finally, an environmental variable called `CODE_HOME` is set to make sure we don't have path errors in our scripts.
 
 For details on the code, see the [README.md](classifiers/README.md) included with it.
 
