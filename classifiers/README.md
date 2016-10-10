@@ -48,6 +48,47 @@ Here is logistic regression for removing and not removing stop words:
 
 It is interesting that we do better when we have the entire report. We probably would want to first start from what Yu was doing (I'm not totally sure, @mlungren will hopefully give insight), and then try to improve upon that. What we can do is different visualizations (both of data and of misclassified cases) to improve some classifier.
 
+**2.countVectorizer.py**
+
+The script [2.countVectorizer.py](2.countVectorizer.py) (also mostly self documented) uses the scikit learn count vectorizer to build ensemble tree classifiers for each of the same holdout groups. There were much better results for this method (and I believe that I reproduced the original result) however it was very sensitive to the data used for train and test:
+
+### Impressions
+
+	# RUNNING ANALYSIS for impression:
+
+	# train(3|4)
+	# test(2)
+	# Score: 0.911392405063
+
+	# train(2|4)
+	# test(3)
+	# Score: 0.842105263158
+
+	# train(2|3)
+	# test(4)
+	# Score: 0.725
+
+
+### Entire Reports
+
+
+	# RUNNING ANALYSIS FOR rad_report:
+
+	# train(3|4)
+	# test(2)
+	# Score: 0.909282700422
+
+	# train(2|4)
+	# test(3)
+	# Score: 0.877192982456
+
+	# train(2|3)
+	# test(4)
+	# Score: 0.725
+
+
+Using 2|3 to train and 4 to test has equivalent results between using the entire report and just impressions. There is some improvement in using the full report when using 3 to test, and slight worse performance for full reports when using set 2 to test. Likely if we did these many times, we would see there is some variance (and the two aren't significantly different), but I have not yet tested this.
+
 
 ## Long Term Goals
 - Obviously, build a better machine learning classifier
