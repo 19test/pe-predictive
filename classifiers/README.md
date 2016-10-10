@@ -2,7 +2,7 @@
 
 This will be a set of preliminary analyses for me to get familiar with the data, described in the [previous README](../README.md). If you did not read this previous document, know that the entire analysis (I ran) from within a Docker image to deal with installation of all dependencies, and the final command to use the image was:
 
-      docker run -it vanessa/pe-predictive
+      docker run -it vanessa/pe-predictive bash
 
 You can of course install on your local machine, but then you will need to install dependencies (not recommended).
 
