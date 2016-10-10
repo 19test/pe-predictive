@@ -1,7 +1,7 @@
 #!/bin/python
 # Note, this should be run within the Docker image provided to have all dependendencies, see
 # ../Dockerfile in the base repo along with the README.md for setup instructions
-# Here we are going to try using sklean feature_vectorizer
+# Here we are going to try using sklean Countvectorizer
 
 
 from sklearn.feature_extraction.text import CountVectorizer
