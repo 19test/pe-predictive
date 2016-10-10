@@ -152,8 +152,9 @@ pickle.dump(report_results,open("data/report_tree_results.pkl","wb"))
 
 # train(2|4)
 # test(3)
-# Score: 0.877192982456
+# Score: 0.842105263158
 
 # train(2|3)
 # test(4)
-# Score: 0.725
+# Score: 0.73123
+

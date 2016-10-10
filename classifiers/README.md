@@ -54,37 +54,27 @@ The script [2.countVectorizer.py](2.countVectorizer.py) (also mostly self docume
 
 ### Impressions
 
-	# RUNNING ANALYSIS for impression:
+	holdout(3)-train(2|4)
+	Accuracy: 0.824561403509
 
-	# train(3|4)
-	# test(2)
-	# Score: 0.911392405063
+	holdout(2)-train(3|4)
+	Accuracy: 0.915611814346
 
-	# train(2|4)
-	# test(3)
-	# Score: 0.842105263158
-
-	# train(2|3)
-	# test(4)
-	# Score: 0.725
+	holdout(4)-train(2|3)
+	Accuracy: 0.74375
 
 
 ### Entire Reports
 
 
-	# RUNNING ANALYSIS FOR rad_report:
+	holdout(3)-train(2|4)
+	Accuracy: 0.842105263158
 
-	# train(3|4)
-	# test(2)
-	# Score: 0.909282700422
+	holdout(2)-train(3|4)
+	Accuracy: 0.909282700422
 
-	# train(2|4)
-	# test(3)
-	# Score: 0.877192982456
-
-	# train(2|3)
-	# test(4)
-	# Score: 0.725
+	holdout(4)-train(2|3)
+	Accuracy: 0.73125
 
 
 Using 2|3 to train and 4 to test has equivalent results between using the entire report and just impressions. There is some improvement in using the full report when using 3 to test, and slight worse performance for full reports when using set 2 to test. Likely if we did these many times, we would see there is some variance (and the two aren't significantly different), but I have not yet tested this.

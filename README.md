@@ -66,8 +66,14 @@ For details on the code, see the [README.md](classifiers/README.md) included wit
 
 If you forget to add a volume when you run the container (oups) you can copy data from the container to your local machine:
 
+      # For doc2vec analysis
       docker cp 74feea5941b5:/code/data/filtered_4_batches.tsv $PWD/data
       docker cp 74feea5941b5:/code/data/impression_lr_confusions.pkl $PWD/data
+
+      # For countVectorizer analysis
+      docker cp 5821c7f952e7:/code/data/impression_tree_results.pkl $PWD/data
+      docker cp 5821c7f952e7:/code/data/report_tree_results.pkl $PWD/data 
+
 
 Where the id of the container is obtained with `docker -ps`
 
