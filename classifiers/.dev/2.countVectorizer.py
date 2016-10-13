@@ -1,40 +1,5 @@
-#!/bin/python
-# Note, this should be run within the Docker image provided to have all dependendencies, see
-# ../Dockerfile in the base repo along with the README.md for setup instructions
-# Here we are going to try using sklean Countvectorizer
-
-
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.metrics import confusion_matrix
-from sklearn import ensemble
-
-import pandas
-import pickle
-import numpy
-import os
-
-# Let's make sure we are working from CODE HOME
-CODE_HOME = os.environ["CODE_HOME"]
-os.chdir(CODE_HOME)
-
-# Read in data, this includes @mlungren annotations, filtered down to batches 1-4
-data = pandas.read_csv("data/filtered_4_batches.tsv",sep="\t",index_col=0)
-# there should be 944 rows
-
-# Batches 1 and 2 are not independent, we will only use larger of the two
-batches = [2.,3.,4.]
-data = data[data.batch.isin(batches)]
-# 691, if we use 1 instead we only have 470
-
 
 def predictPE(inputDataLabel):
-    '''predictPE is a massive wrapper to run all iterations of training and testing using some input label.
-    (eg, impression or report). A dictionary structure of confusion matrices is returned, include a summed
-    and normalized version to represent the success of the entire batch. Note that this function is dependent
-    on some of the global variables defined above (not proper, but will work for this batch script :))
-    :param model_type: right now I just tried "logistic_regression"
-    :param inputDataLabel: should be one of "impression" or "rad_report"
-    '''
     confusions = dict()
   
     for holdout in batches:
