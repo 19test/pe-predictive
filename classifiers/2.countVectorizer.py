@@ -27,18 +27,6 @@ data = data[data.batch.isin(batches)]
 # 691, if we use 1 instead we only have 470
 
 
-### SUPPORTING FUNCTIONS ################################################################
-
-def makeConfusion(y_true,y_pred,labels):
-    '''makeConfusion simply wraps scikit-learns confusion_matrix function,
-    and turns into a pandas DataFrame with column and row names
-    '''
-    confusion = confusion_matrix(y_true, y_pred)
-    labels = numpy.unique(y_true.unique().tolist() + numpy.unique(y_pred).tolist()).tolist()
-    confusion = pandas.DataFrame(confusion,columns=labels,index=labels)
-    return confusion
-
-
 def predictPE(inputDataLabel):
     '''predictPE is a massive wrapper to run all iterations of training and testing using some input label.
     (eg, impression or report). A dictionary structure of confusion matrices is returned, include a summed

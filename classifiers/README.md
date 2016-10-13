@@ -1,56 +1,97 @@
 # Predicting PE from Radiology Reports
 
-This will be a set of preliminary analyses for me to get familiar with the data, described in the [previous README](../README.md). If you did not read this previous document, know that the entire analysis (I ran) from within a Docker image to deal with installation of all dependencies, and the final command to use the image was:
+We are asking the following questions, from [Chapman](docs/chapman_pefinder.pdf)
 
-      docker run -it vanessa/pe-predictive bash
+- Was the patient positive for a pulmonary embolism? 
+- Was the pulmonary embolism acute or chronic? 
+- Was there uncertainty regarding the diagnosis of PE? 
+- Was the exam of diagnostic quality?
+
+For this work, I will run a Stanford dataset through the PE Finder, and compare this to a traditional NLP method. I will also do the opposite for the original (Ohio) data used with PEFinder (i.e, run the Chapman data that has been analyzed with PE Finder through some NLP method we develop.
+
+
+## Files and data
+A little about the file organization:
+
+- [.dev](.dev): Is a hidden folder with scripts that were not used for the final analysis.
+- [chapman-data](chapman-data): is data from Chapman's work, for comparison of methods
+- [stanford-data](stanford-data): includes data from Stanford (not currently in the repo, as it's too big)
+- [Dockerfile](Dockerfile): is the specification for a Docker image, `vanessa/pe-predictive`, to run the analysis.
+
+More detail on the analysis scripts is included below setup.
+
+
+## Setting up the environment
+First you will need to [install Docker](https://docs.docker.com/engine/installation/). Once installed, you can build the image as follows:
+
+      docker build -t vanessa/pe-predictive .
+
+This will build an image called `vanessa/pe-predictive`. We will then run the container and map the files in the present working directory to the container, so they are shared:
+
+      docker run -it -v $PWD/:/code vanessa/pe-predictive bash
+
+At this point, you are inside the container. The files in the folder on your machine are mapped as a volume. The working directory will be the folder `/code` and within this folder you will see the same files as on your local machine. All python dependencies are installed, and you should use `python3`, `python`, `ipython3` and `pip3`, and these have been aliased to run with their counterparts (without the 3). When you use `ipython` and need to paste, the paste magic (`%paste`) will not work, but you can accomplish the same thing with `%cpaste` followed by CONTROL+D. Finally, an environmental variable called `CODE_HOME` is set to make sure we don't have path errors in our scripts.
 
 You can of course install on your local machine, but then you will need to install dependencies (not recommended).
 
-## Overview
-This small analysis will first convert the radiology reports/impressions to a vector representation using [doc2vec](http://radimrehurek.com/gensim/models/doc2vec.html), and then use logistic regression on training and holdout (test) sets to assess the predictive ability of the reports/impressions. I chose doc2vec for several reasons:
 
-## Reasons to try doc2vec
-- the framework allows for a document of any length to be mapped into the space.
-- a model can be saved and updated
+## Data Notes
+
+### Organization
+The data_*.csv files are currently being used for @mlungren to randomly select and annotate. We need to figure out a different/better way for this task, likely starting with where the data originates, and what the intended use is. Keeping the classiifer results, and the raw data (reports), and the other various meta data in one massive file makes me very anxious and is not a suitable long term solution for this kind of work.
+
+### Column Values
+This is my best understanding of the meta-data fields:
+
+- pat_deid: this is a deidentified patient ID. I would like to eventually know where and how this is generated, and where it links to, but this level of understanding is suitable for now.
+- order_deid: is the id of the order, the idea being that one patient could have multiple orders. Question: what if a patient has more than one, if the reports are different is the idea that it's not an issue?
+- rad_report: this is literally the entire radiologist report in a column.
+- impression: this is an extracted portion of the report. We should note this is done programatically, and while probably most of them are OK, there could be a subset with errors.
+- batch: is the batch number mentioned above. There are currently 4.
+- disease_state_label, 
+- uncertainty_label, 
+- quality_label, 
+- historicity_label: these are manually labeled annotations by @mlungren
+- disease_state_prob,
+- uncertainty_prob,
+- quality_prob,
+- historicity_prob: these are produced by Yu's classifier. The code is (somewhere) in ipython notebooks.
+- disease_PEfinder: is the PEfinder (Chapman) being run on these datasets. The accuracy of this has not been assessed, but this would be useful for some future paper.
+- looking_for_PE?: Was the purpose of the report to look for PE (1), or was it an indicental finding (0).
+- train=2/test=1: This is a column to indicate that some of the records (2) were used for training, and some for testing (1).
+- disease_probability_test: this is the outcome of the model building with the labels specified by train=2/test=1
+- probability_looking_for_PE: Another of Yu's models to predict if the exam was done looking for PE, Yu noted this performed very well (i.e., we can predict if the assessment was done to specifically look for PE based on the report alone)
+ 
 
 ## Analysis steps
 
 ### Filter and preparing data
 
-**0.reportsFilter.py**
-The script [0.reportsFilter.py](0.reportsFilter.py) simply loads the data (from what I have, the `final_3.csv`). It summarizes counts for each of the class labels, along with columns provided and shows the change in size before and after filtering. The final task is to save a filtered dataset from the raw data, which is `../data/filtered_reports.tsv` (not provided in this repo).
+**0.reportsPrep.py**
+The script [0.reportsPrep.py](0.reportsPrep.py) simply loads the data (from what I have, the `final_3.csv`). It summarizes counts for each of the class labels, along with columns provided and shows the change in size before and after filtering. The final task is to save a filtered dataset from the raw data, for each of chapman and Stanford, in the [stanford-data](stanford-data) and [chapman-data](chapman-data) folders, each in the format that the other's classifier needs. Note: the Chapman data was produced according to the notebook [DocumentClassification.ipynb](../chapman/notebooks/DocumentClassification.ipynb) up to the line 22:
 
-**1.doc2vec.py**
-The script [1.doc2Vec.py](1.doc2Vec.py) (mostly self documented) uses logistic regression on the doc2vec vectors to see if we can distinguish PE / not PE. The performance was terrible (context of the words is not the key to figuring out the diagnosis, likely) but I thought it was interesting that using the whole report had better performance than just the impression section. Specifically, when we add up the diagonal of the normalized confusion matrices (the sum of the ones we got right, each representing a percentage of all the reports):
+      data, kb = get_data()
 
-Here is logistic regression for removing and not removing stop words:
- 
-### Impressions
+and then saved:
 
-	# numpy.trace(confusions['batch-1-1']['norm-batch-1-1'])
-	# 0.60207100591715978
-
-	# numpy.trace(confusions['batch-0-1']['norm-batch-0-1'])
-	# 0.59334298118668594
-
-	# Ouch! Does not work!
+      # 'id', 'impression', 'disease_state', 'uncertainty', 'quality', 'historicity'
+      data.to_csv("chapman-data/chapman_df.tsv",sep="\t")
+      
+      # 'modifiers', 'schema', 'rules', 'targets'
+      pickle.dump(kb,open('chapman-data/chapman-kb.pkl','wb'))
 
 
-### Entire reports
+**1.predictChapman.py**
+This will use both Utah (Chapman) and Stanford datasets to build the rule-based (Chapman) model, using PEpredict. 
+
+**2.predictStanford.py**
+This will use both Utah (Chapman) and Stanford datasets to build the rule-based (Chapman) model, using PEpredict. 
 
 
-	# numpy.trace(confusions['batch-1-1']['norm-batch-1-1'])
-	# 0.6758321273516642
-
-	# numpy.trace(confusions['batch-0-1']['norm-batch-0-1'])
-	# 0.66714905933429813
 
 
-It is interesting that we do better when we have the entire report. We probably would want to first start from what Yu was doing (I'm not totally sure, @mlungren will hopefully give insight), and then try to improve upon that. What we can do is different visualizations (both of data and of misclassified cases) to improve some classifier.
 
-**2.countVectorizer.py**
-
-The script [2.countVectorizer.py](2.countVectorizer.py) (also mostly self documented) uses the scikit learn count vectorizer to build ensemble tree classifiers for each of the same holdout groups. There were much better results for this method (and I believe that I reproduced the original result) however it was very sensitive to the data used for train and test:
+The script [1.countVectorizer.py](1.countVectorizer.py) (also mostly self documented) uses the scikit learn count vectorizer to build ensemble tree classifiers for each of the same holdout groups. There were much better results for this method (and I believe that I reproduced the original result) however it was very sensitive to the data used for train and test:
 
 ### Impressions
 

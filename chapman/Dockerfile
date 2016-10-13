@@ -3,11 +3,14 @@ FROM continuumio/anaconda3
 RUN apt-get update
 
 # Install software dependencies
+RUN apt-get -y install graphviz
 RUN pip install radnlp==0.2.0.8
 RUN pip install seaborn==0.7.1
+RUN pip install pydotplus
 
 # Install jupyter notebook
 RUN /opt/conda/bin/conda install jupyter -y --quiet 
+RUN python -c "import nltk; nltk.download('all')"
 RUN mkdir /opt/notebooks 
 
 # Add the start script to the container root
