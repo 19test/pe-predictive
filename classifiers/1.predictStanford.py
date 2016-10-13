@@ -80,6 +80,14 @@ def predictPE(reports,y,cv=10):
     # Fit the model
     X = countvec.fit_transform(reports)
 
+    # Let's save everything as we go, for each round
+    scores = []
+    params = []
+    confusions = []
+    sizes = []
+    importances = []
+    wrongs = []
+
     # Convert lookup of terms to indices, to indices to terms
     lookup = {val:key for key,val in countvec.vocabulary_.items()}
 
@@ -102,9 +110,10 @@ def predictPE(reports,y,cv=10):
 
         # 2. Which features are important?
         # NOTE: we have a lot of numbers in here - might want to use regex to filter
-        importances = getImportance(clf=clf,
-                                    lookup=lookup,
-                                    save_top=100)
+        importance = getImportance(clf=clf,
+                                   lookup=lookup,
+                                   save_top=100)
+        importances.append(importance)
 
         # 3. How well did we do? Test on test
         testX = X[test_idx]
@@ -114,25 +123,33 @@ def predictPE(reports,y,cv=10):
         confusion = makeConfusion(y_true=testy,
                                   y_pred=predictions,
                                   labels=labels)
+        confusions.append(confusion)
 
         # 4. Which ones did we get wrong?
-        wrongs = getMisclassified(reports=reports,
-                                  predictions=predictions,
-                                  actual=testy)
+        wrong = getMisclassified(reports=reports,
+                                 predictions=predictions,
+                                 actual=testy)
+        wrongs.append(wrong)
+
+        # 6. What was the score?
+        score = (len(predictions) - len(wrong)) / len(predictions)        
+        scores.append(score)
 
         # 5. Save sizes, etc.
-        sizes = {"train":len(trainy),"test":len(testy)}
+        sizes.append([len(trainy),len(testy)])
+        params.append(clf.get_params())        
 
-        # For each, let's save scores, cv, confusion, wrong
-        result = {"scores":scores,
-                  "cv":cv,
-                  "confusion":confusion,
-                  "importances":importances,
-                  "misclassified":wrongs,
-                  "N":sizes,
-                  "params":clf.get_params()}
+    # For each, let's save scores, cv, confusion, wrong
+    sizes = pandas.DataFrame(sizes,columns=['train','test'])
+    result = {"scores":scores,
+              "cv":cv,
+              "confusion":confusions,
+              "importances":importances,
+              "misclassified":wrongs,
+              "N":sizes,
+              "params":params}
 
-        return result
+    return result
 
 
 def print_result(result):
@@ -199,7 +216,7 @@ PE["stanford|disease_state_label|impression"] = predictPE(reports=reports,y=y)
 reports = sdata['rad_report']
 PE["stanford|disease_state_label|impression"] = predictPE(reports=reports,y=y)
 
-results["pumonary_embolism"] = PE
+results["pulmonary_embolism"] = PE
 
 ###############################################################
 # QUALITY PREDICTION [Diagnostic=589,Limited=97]
@@ -270,6 +287,35 @@ hist["chapman|historicity|impression"] = predictPE(reports=reports,y=y)
 
 # Save all hist results
 results['historicity'] = hist
+
+
+###############################################################
+# UNCERTAINTY PREDICTION
+###############################################################
+
+uncertain = dict()
+
+reports = sdata[sdata.uncertainty.isnull()==False]
+y = reports['uncertainty']
+
+# IMPRESSIONS
+impressions = reports['impression']
+uncertain["stanford|uncertainty|impression"] = predictPE(reports=impressions,y=y)
+
+# FULL REPORT
+reports = reports['rad_report']
+uncertain["stanford|uncertainty|rad_report"] = predictPE(reports=impressions,y=y)
+
+# Predict Historicity for Chapman data:
+chapman = cdata[cdata.uncertainty.isnull()==False]
+reports = chapman['impression'].tolist()
+getRidOf = ['[Report de-identified (Limited dataset compliant) by De-ID v.6.21.01.0]','NULL']
+reports = replace_text(reports,getRidOf,'')
+y = chapman['uncertainty']
+uncertain["chapman|uncertainty|impression"] = predictPE(reports=reports,y=y)
+
+# Save all hist results
+results['uncertainty'] = uncertain
 
 pickle.dump(results,open('results/chapman_stanford_results.pkl','wb'))
 
