@@ -28,6 +28,26 @@ batches = [2.,3.,4.]
 sdata = sdata[sdata.batch.isin(batches)]
 # 691
 
+def getMisclassified(reports,predictions,actual):
+    '''getMisclassified will return misclassified reports based on vectors of predictions
+    and actual labels
+    :param reports: a list of reports associated with the labels
+    :param predictions: a list of predicted labels
+    :param actual: a list of actual labels
+    '''
+    # If reports is a series from a df, convert to list
+    if isinstance(reports,list) == False:
+        reports = reports.tolist()
+
+    # Create list of tuples with report, prediction, actual if it's wrong
+    wrongs = [(reports[x],predictions[x],actual[x]) for x in range(0,len(predictions)) if predictions[x] != actual[x]]
+    if len(wrongs) > 0:
+        wrongs = pandas.DataFrame(wrongs,columns=["report","prediction","actual"])
+    else:
+        wrongs = []
+    return wrongs
+
+
 def getImportance(clf,lookup,save_top=None):
     '''getImporance will get the important features based on a lookup 
     :param clf: the fit classifier to assess
@@ -45,15 +65,13 @@ def getImportance(clf,lookup,save_top=None):
     return importance_df
 
 
-def predictPE(reports,y,cv=10,labels=None):
+def predictPE(reports,y,cv=10):
     '''predictPE will vectorize text and then run N fold cross validation 
     with an ensemble tree classifier to predict PE
     :param reports: should be a list or series of report text to be vectorized
     :param y: should be the actual rx labels (right now in Neg and Pos)
     :param labels: should be the unique labels (just for column/row names of confusion)
     '''
-    if labels == None:
-        labels = ['Neg','Pos']
 
     # Generate vectors of counts
     countvec = CountVectorizer(ngram_range=(1,2),
@@ -74,7 +92,7 @@ def predictPE(reports,y,cv=10,labels=None):
         
         # 1. Fit the classifier
         clf = ensemble.ExtraTreesClassifier(class_weight='balanced')
-        clf.fit(X,y)
+        clf.fit(trainX,trainy)
         # ExtraTreesClassifier(bootstrap=False, class_weight='balanced',
         #   criterion='gini', max_depth=None, max_features='auto',
         #   max_leaf_nodes=None, min_impurity_split=1e-07,
@@ -98,14 +116,24 @@ def predictPE(reports,y,cv=10,labels=None):
                                   labels=labels)
 
         # 4. Which ones did we get wrong?
+        wrongs = getMisclassified(reports=reports,
+                                  predictions=predictions,
+                                  actual=testy)
+
+        # 5. Save sizes, etc.
+        sizes = {"train":len(trainy),"test":len(testy)}
 
         # For each, let's save scores, cv, confusion, wrong
         result = {"scores":scores,
                   "cv":cv,
                   "confusion":confusion,
-                  "importances":importances}
+                  "importances":importances,
+                  "misclassified":wrongs,
+                  "N":sizes,
+                  "params":clf.get_params()}
 
         return result
+
 
 def print_result(result):
     for rkey,res in result.items():
@@ -122,77 +150,36 @@ def replace_text(textList,findList,replacewith):
         return textList
 
 
+# Save all results to a dictionary
+results = dict()
+
 ###############################################################
 # PE PREDICTION [Neg,Pos]
 ###############################################################
 
+PE = dict()
 
 # Predict PE for Stanford Data (IMPRESSIONS):
 reports = sdata['impression']
 y = sdata['disease_state']
-stanford_result = predictPE(reports=reports,y=y)
-print_result(stanford_result)
-
-# scores:
-# [ 0.91428571  0.88571429  0.9         0.91428571  0.89855072  0.89855072
-#   0.91304348  0.91176471  0.91176471  0.89705882]
-
-
-# confusion:
-#     Neg  Pos
-# Neg  612    2
-# Pos   66   11
-
-# cv:
-# 10
+PE["stanford|disease_state|impression"] = predictPE(reports=reports,y=y)
 
 # Predict PE for Stanford Data (FULL REPORTS):
 reports = sdata['rad_report']
 y = sdata['disease_state']
-stanford_result = predictPE(reports=reports,y=y)
-print_result(stanford_result)
-
-# scores:
-#[ 0.91428571  0.88571429  0.9         0.91428571  0.88405797  0.91304348
-#  0.88405797  0.92647059  0.89705882  0.92647059]
-
-
-# confusion:
-#    Neg  Pos
-# Neg  614    0
-# Pos   74    3
-
-
-# cv:
-# 10
-
+PE["stanford|disease_state|rad_report"] = predictPE(reports=reports,y=y)
 
 # Predict PE for Chapman data:
-cdata = cdata[cdata.disease_state.isnull()==False]
-reports = cdata['impression'].tolist()
+chapman = cdata[cdata.disease_state.isnull()==False]
+reports = chapman['impression'].tolist()
 
 # Clean up text
 getRidOf = ['[Report de-identified (Limited dataset compliant) by De-ID v.6.21.01.0]',
             'NULL']
 reports = replace_text(reports,getRidOf,'')
 
-y = cdata['disease_state']
-chapman_result = predictPE(reports=reports,y=y)
-print_result(chapman_result)
-
-# scores:
-# [ 0.86206897  0.85057471  0.89655172  0.8255814   0.84883721  0.8372093
-#   0.88235294  0.85882353  0.87058824  0.92941176]
-
-
-# confusion:
-#      Neg  Pos
-# Neg  538   28
-# Pos   91  202
-
-
-# cv:
-# 10
+y = chapman['disease_state']
+PE["chapman|disease_state|impression"] = predictPE(reports=reports,y=y)
 
 
 ###############################################################
@@ -207,114 +194,84 @@ y = sdata['disease_state_label'].copy()
 # This would only hurt us in making it harder to predict PE if
 # the signal in the "probably positive" isn't as strong
 y[y=="probably positive"] = "definitely positive"
-labels = y.unique().tolist()
-
-stanford_result = predictPE(reports=reports,y=y,labels=labels)
-print_result(stanford_result)
-
-# scores:
-#[ 0.88732394  0.87142857  0.85714286  0.85507246  0.85507246  0.88405797
-#  0.85507246  0.91176471  0.86764706  0.88235294]
-
-
-# confusion:
-#                     definitely negative  definitely positive  \
-# definitely negative                    0                   13   
-# definitely positive                    0                  587   
-# probably negative                      0                   61   
-# Indeterminate                          0                   10   
-
-#                      probably negative  Indeterminate  
-# definitely negative                  0              0  
-# definitely positive                  4              0  
-# probably negative                   16              0  
-# Indeterminate                        0              0  
-
-# cv:
-# 10
-
+PE["stanford|disease_state_label|impression"] = predictPE(reports=reports,y=y)
 
 reports = sdata['rad_report']
-stanford_result = predictPE(reports=reports,y=y,labels=labels)
-print_result(stanford_result)
+PE["stanford|disease_state_label|impression"] = predictPE(reports=reports,y=y)
 
-# {'scores': array([ 0.84507042,  0.84285714,  0.84285714,  0.86956522,  0.85507246,
-   # 0.88405797,  0.89855072,  0.89705882,  0.86764706,  0.88235294]), 'confusion':                      definitely negative  definitely positive  \
-# definitely negative                    0                   12   
-# definitely positive                    0                  591   
-# probably negative                      0                   73   
-# Indeterminate                          0                   10   
-
-#                      probably negative  Indeterminate  
-# definitely negative                  1              0  
-# definitely positive                  0              0  
-# probably negative                    4              0  
-# Indeterminate                        0              0  , 'cv': 10}
-
-# This gives us more fine grainted predicted, of course at a loss of "performance"
-
-
+results["pumonary_embolism"] = PE
 
 ###############################################################
 # QUALITY PREDICTION [Diagnostic=589,Limited=97]
 ###############################################################
 
-# Predict Quality for Stanford Data (IMPRESSIONS): N=686
+quality = dict()
+
+# Predict Quality for Stanford Data:
 reports = sdata.copy()
 
 # Not Diagnostic we only have 3, so eliminating
 reports = reports[reports.quality != "Not Diagnostic"]
 reports = reports[reports.quality.isnull()==False]
 y = reports['quality'][reports.quality.isnull()==False]
+
+# IMPRESSIONS
 impressions = reports['impression'][reports.quality.isnull()==False]
+quality["stanford|quality|impression"] = predictPE(reports=impressions,y=y)
+
+# FULL REPORT
 reports = reports['rad_report'][reports.quality.isnull()==False]
-impression_result = predictPE(reports=impressions,y=y,labels=y.unique().tolist())
-print_result(impression_result)
+quality["stanford|quality|rad_report"]= predictPE(reports=reports,y=y)
+quality["stanford|quality|impression"] = predictPE(reports=impressions,y=y)
 
-# scores:
-# [ 0.85507246  0.84057971  0.85507246  0.88405797  0.91304348  0.94202899
-#  0.85507246  0.89705882  0.91176471  0.91044776]
+# Predict Quality for Chapman Data:
 
+chapman = cdata[cdata.quality.isnull()==False]
+reports = chapman['impression']
 
-# confusion:
-#            Diagnostic  Limited
-# Diagnostic         586        3
-# Limited             75       22
+# Clean up text
+getRidOf = ['[Report de-identified (Limited dataset compliant) by De-ID v.6.21.01.0]','NULL']
+reports = replace_text(reports,getRidOf,'')
+y = chapman['quality']
+quality["chapman|quality|impression"] = predictPE(reports=reports,y=y)
 
+# Save all quality results
+results['quality'] = quality
 
-# cv:
-# 10
+###############################################################
+# HISTORICITY PREDICTION
+###############################################################
 
-report_result = predictPE(reports=reports,y=y,labels=y.unique().tolist())
-print_result(report_result)
+# Predict Historicity for Stanford Data:
+hist = dict()
 
+reports = sdata[sdata.historicity.isnull()==False]
+y = reports['historicity']
 
-# scores:
-# [ 0.85507246  0.85507246  0.85507246  0.86956522  0.86956522  0.84057971
-#  0.85507246  0.86764706  0.86764706  0.86567164]
+# IMPRESSIONS
+impressions = reports['impression']
+hist["stanford|historicity|impression"] = predictPE(reports=impressions,y=y)
 
+# FULL REPORT
+reports = reports['rad_report']
+hist["stanford|historicity|rad_report"] = predictPE(reports=impressions,y=y)
 
-# confusion:
-#            Diagnostic  Limited
-# Diagnostic         585        4
-# Limited             90        7
+# Predict Historicity for Chapman data:
+chapman = cdata[cdata.historicity.isnull()==False]
 
+# We don't have enough samples for Mixed and No Consensus, just New and Old
+reports = chapman['impression'][chapman.historicity.isin(['Mixed','No Consensus']) == False].tolist()
 
-# cv:
-# 10
+# Clean up text
+getRidOf = ['[Report de-identified (Limited dataset compliant) by De-ID v.6.21.01.0]','NULL']
+reports = replace_text(reports,getRidOf,'')
+y = chapman['historicity'][chapman.historicity.isin(['Mixed','No Consensus']) == False]
+hist["chapman|historicity|impression"] = predictPE(reports=reports,y=y)
 
+# Save all hist results
+results['historicity'] = hist
 
-
-# Predict Quality for Stanford Data (FULL REPORT):
-
-
-
-# Predict Historicity for Stanford Data (IMPRESSIONS):
-
-
-
-# Predict Historicity for Stanford Data (FULL REPORT):
-
+pickle.dump(results,open('results/chapman_stanford_results.pkl','wb'))
 
 ###############################################################
 # ROC CURVES For each, using one randomly sampled CV section-
