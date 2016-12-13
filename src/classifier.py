@@ -72,6 +72,21 @@ if __name__ == '__main__':
     classifier_dir = join(project_dir, 'classifiers')
     checkpoint_dir = join(project_dir, 'checkpoints')
 
+
+    # Hyperparameters for model
+    init_scale = 0.04
+    learning_rate = 1.0
+    max_grad_norm = 10
+    num_layers = 2
+    num_steps = 50
+    hidden_size = 1500
+    max_epoch = 14
+    max_max_epoch = 55
+    keep_prob = 0.35
+    lr_decay = 1 / 1.15
+    batch_size = 32
+    embedding_len = sampler.get_embedding_len()
+
     # import chapman and stanford data
     sampler = Sampler()
     sampler.add_data(join(classifier_dir, 'chapman-data/chapman_df.tsv'))
@@ -80,9 +95,6 @@ if __name__ == '__main__':
     sampler.split_train()
     sampler.initialize()
 
-    batch_size = 32
-    sentence_len = 50
-    embedding_len = sampler.get_embedding_len()
 
     # create lstm model for learning
     x_in = tf.Placeholder(tf.float32, shape=(batch_size,
