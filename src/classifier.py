@@ -38,7 +38,7 @@ class Logger:
         vals = [str(k) + ':' + str(v) for k, v in data.iteritems()]
         print ' - '.join(vals)
 
-class GlobalOpts:
+class GlobalOpts(object):
     def __init__(self, name):
         # Directory structure
         self.project_dir = join(dirname(__file__), '..')
@@ -52,21 +52,29 @@ class GlobalOpts:
         VAL_CHECK = 200
         CHECKPOINT = 10000
 
+class WordCNNOpts(GlobalOpts):
+    def __init__(self, name):
+        super(WordCNNOpts, self).__init__(name)
+        self.batch_size = 32
+        self.window_size = 10
+        self.num_filters = 50
+        self.sentence_len = 1500
+
 class LSTMOpts(GlobalOpts):
     def __init__(self, name):
-        super(name)
+        super(LSTMOpts, self).__init__(name)
         # Hyperparameters for model
-        init_scale = 0.04
-        learning_rate = 1.0
-        max_grad_norm = 10
-        num_layers = 2
-        num_steps = 50
-        hidden_size = 1500
-        max_epoch = 14
-        max_max_epoch = 55
-        keep_prob = 0.35
-        lr_decay = 1 / 1.15
-        batch_size = 32
+        self.init_scale = 0.04
+        self.learning_rate = 1.0
+        self.max_grad_norm = 10
+        self.num_layers = 2
+        self.num_steps = 50
+        self.hidden_size = 1500
+        self.max_epoch = 14
+        self.max_max_epoch = 55
+        self.keep_prob = 0.35
+        self.lr_decay = 1 / 1.15
+        self.batch_size = 32
 
 
 
@@ -78,8 +86,9 @@ if __name__ == '__main__':
                         type=str, required=True)
     parse.add_arguement('--name', help='Name of directory to place output files in',
                         type=str, required=True)
+    args = parser.parse_args()
 
-    opts = LSTMOpts(name)
+    opts = LSTMOpts(args.name)
     #data_paths = [join(opts.classifier_dir, 'chapman-data/chapman_df.tsv'),
     #                    join(opts.classifier_dir, 'stanford-data/stanford_df.tsv')]
     data_paths = [join(opts.classifier_dir, 'stanford-data/stanford_df.tsv')]
@@ -108,7 +117,7 @@ if __name__ == '__main__':
                             'loss': val_loss, 'acc': val_acc})
             if (it != 0 and it % CHECKPOINT == 0) or \
                     (it + 1) == opts.MAX_ITERS:
-                model.save_weights()
+                model.save_weights(it)
 
 
     # Evaluate performance of model
