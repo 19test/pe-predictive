@@ -1,113 +1,92 @@
-'''
-Creates a LSTM classifier which samples phrases of size N and uses
-disease_PEfinder as ground truth
-'''
 import pandas as pd
 import numpy as np
+import tensorflow as tf
+import argparse
 
 from os.path import join, dirname
-from tensorflow.models.rnn.rnn_cell import BasicLSTMCell, MultiRNNCell
+from models import LSTM_Model
+
+class Logger:
+    '''
+    Object which handles logging learning statistics to file
+    during learning. Prints to learning_summary.json in
+    specified directory
+    '''
+
+    def __init__(self, outdir):
+        self.outfile = join(outdir, 'learning_summary.json')
+
+    def log(self, data):
+        '''
+        Logs dictionary to json file - one object per line
+        Args:
+            data : dictionary of attribute value pairs
+        '''
+        data = {str(k): str(v) for k, v in data.iteritems()}
+        self._prettyPrint(data)
+        with open(self.outfile, 'a') as out:
+            out.write(json.dumps(data))
+            out.write('\n')
+
+    def log_config(self, opts):
+        '''Logs GlobalOpts Object or any object as dictionary'''
+        data = {str(k): str(v) for k, v in opts.__dict__.iteritems()}
+        self.log(data)
+
+    def _prettyPrint(self, data):
+        '''Prints out a dictionary to stout'''
+        vals = [str(k) + ':' + str(v) for k, v in data.iteritems()]
+        print ' - '.join(vals)
+
+class GlobalOpts:
+    def __init__(self, name):
+        # Directory structure
+        self.project_dir = join(dirname(__file__), '..')
+        self.classifier_dir = join(self.project_dir, 'classifiers')
+        self.checkpoint_dir = join(self.project_dir, 'checkpoints')
+        self.glove_path = join(self.project_dir, 'data', 'glove.42B.300d.txt')
+        self.archlog_dir = join(self.project_dir, 'log', name)
+
+        # Print thresholds
+        SUMM_CHECK = 50
+        VAL_CHECK = 200
+        CHECKPOINT = 10000
+
+class LSTMOpts(GlobalOpts):
+    def __init__(self, name):
+        super(name)
+        # Hyperparameters for model
+        init_scale = 0.04
+        learning_rate = 1.0
+        max_grad_norm = 10
+        num_layers = 2
+        num_steps = 50
+        hidden_size = 1500
+        max_epoch = 14
+        max_max_epoch = 55
+        keep_prob = 0.35
+        lr_decay = 1 / 1.15
+        batch_size = 32
 
 
-### LSTM LAYERS
-
-def lstm(input_data, hidden_size, num_layers, name):
-    # input_data : (batch_size, sentence_len, vec_len)
-    batch_size, sentence_len, embedding_len = input_data.get_shape()
-    input_data = tf.split(1, sentence_len, x_in)
-    with tf.variable_scope(name) as scope:
-        multi_lstm = MultiRNNCell([BasicLSTMCell(hidden_size)] * num_layers)
-        state = multi_lstm.zero_state(batch_size, tf.float32)
-        for t in range(sentence_len):
-            output, state = multi_lstm(input_data[t], state)
-            scope.reuse_variables()
-    return output
-
-#TODO : apply gradient clipping
-def _train_op_init(total_loss, global_step):
-    INITIAL_LEARNING_RATE = 0.001
-    LEARNING_RATE_DECAY_FACTOR = 0.1
-    DECAY_STEPS = 5000
-
-    self.lr = tf.train.exponential_decay(INITIAL_LEARNING_RATE,
-                                    global_step,
-                                    DECAY_STEPS,
-                                    LEARNING_RATE_DECAY_FACTOR,
-                                    staircase=True)
-    opt = tf.train.AdamOptimizer(self.lr)
-    grads = opt.compute_gradients(total_loss)
-    apply_gradient_op = opt.apply_gradients(grads, global_step=global_step)
-    train_ops = [apply_gradient_op]
-    train_ops += tf.get_collection('update_ops')
-    return train_ops
-
-# Compute softmax cross entropy loss
-def softmax_loss(logits, labels):
-    cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(logits,
-            labels, name='cross_entropy')
-    cross_entropy_mean = tf.reduce_mean(
-        cross_entropy, name='mean_cross_entropy')
-    tf.add_to_collection('losses', cross_entropy_mean)
-    return tf.add_n(tf.get_collection('losses'), name='total_loss')
-
-
-def dense(input_data, N, H, name):
-    """NN fully connected layer."""
-    with tf.variable_scope(name):  
-        W = tf.get_variable("W", [N, H],
-                initializer=tf.contrib.layers.xavier_initializer())   
-        b = tf.get_variable("b", [H], initializer=tf.constant_initializer(0))
-        return tf.matmul(input_data, W, name="matmul") + b
-
-def dense_relu(input_data, output_dim, name="dense_relu"):
-    """NN dense relu layer"""
-    batch_size, in_dim = input_data.get_shape()
-    with tf.variable_scope(name):
-        affine = dense(input_data, in_dim, H, "dense")
-        return tf.nn.relu(affine, "relu")
 
 if __name__ == '__main__':
-    # Directory structure
-    project_dir = join(dirname(__file__), '..')
-    classifier_dir = join(project_dir, 'classifiers')
-    checkpoint_dir = join(project_dir, 'checkpoints')
 
+    parser = argparse.ArgumentParser(
+        description='Text Classification Models for PE-Predictive Project')
+    parser.add_argument('--arch', help='Network architecture',
+                        type=str, required=True)
+    parse.add_arguement('--name', help='Name of directory to place output files in',
+                        type=str, required=True)
 
-    # Hyperparameters for model
-    init_scale = 0.04
-    learning_rate = 1.0
-    max_grad_norm = 10
-    num_layers = 2
-    num_steps = 50
-    hidden_size = 1500
-    max_epoch = 14
-    max_max_epoch = 55
-    keep_prob = 0.35
-    lr_decay = 1 / 1.15
-    batch_size = 32
-    embedding_len = sampler.get_embedding_len()
+    opts = LSTMOpts(name)
+    #data_paths = [join(opts.classifier_dir, 'chapman-data/chapman_df.tsv'),
+    #                    join(opts.classifier_dir, 'stanford-data/stanford_df.tsv')]
+    data_paths = [join(opts.classifier_dir, 'stanford-data/stanford_df.tsv')]
 
-    # import chapman and stanford data
-    sampler = Sampler()
-    sampler.add_data(join(classifier_dir, 'chapman-data/chapman_df.tsv'))
-    sampler.add_data(join(classifier_dir, 'stanford-data/stanford_df.tsv'))
-    sampler.add_embeddings(join(project_dir, 'data', 'glove.42B.300d.txt')
-    sampler.split_train()
-    sampler.initialize()
-
-
-    # create lstm model for learning
-    x_in = tf.Placeholder(tf.float32, shape=(batch_size,
-        sentence_len, embedding_len))
-    y_in = tf.Placeholder(tf.int64, shape=(batch_size))
-    global_step = tf.Variable(0, trainable=False)
-
-    logits = lstm(x_in, hiddens_size=200, num_layers=1)
-    logits = dense_relu(logits, output_dim=2)
-    loss = softmax_loss(logits, gt_labels)
-    acc = tf.reduce_mean(tf.equal(tf.argmax(logits, 1), y_in))
-    pred = tf.nn.softmax(logits)
-    train_op = _train_op_init(loss, global_step=global_step)
+    sampler = Sampler(data_paths=data_paths, embedding_path=opts.glove_path)
+    embedding_np = sampler.get_embeddings()
+    model = LSTM_Model(embedding_np, opts)
 
     # Train model
     with tf.Session() as sess:
@@ -116,24 +95,20 @@ if __name__ == '__main__':
 
             # Step of optimization method
             batchX, batchy = sampler.sample_train()
-            output = sess.run([loss, acc, train_op],
-                feed_dict={x_in : batchX, y_in : batchy})
-            train_loss, train_acc = (output[0], output[1])
+            train_loss, train_acc = model.step(batchX, batchy, train=True)
 
-            if it % opts.SUMM_CHECK == 0:
+            if it % SUMM_CHECK == 0:
                 logger.log({'iter': it, 'mode': 'train','dataset': 'train',
                     'loss': train_loss, 'acc': train_acc})
-            if it != 0 and it % opts.VAL_CHECK == 0:
+            if it != 0 and it % VAL_CHECK == 0:
                 # Calculate validation accuracy
                 batchX, batchy = sampler.sample_val()
-                val_loss, val_acc = sess.run([loss, acc],
-                    feed_dict={x_in : batchX, y_in : batchy})
+                val_loss, val_acc = model.step(batchX, batchy, train=False)
                 logger.log({'iter': it, 'mode': 'train', 'dataset': 'val',
                             'loss': val_loss, 'acc': val_acc})
-            if (it != 0 and it % opts.CHECKPOINT == 0) or \
+            if (it != 0 and it % CHECKPOINT == 0) or \
                     (it + 1) == opts.MAX_ITERS:
-                checkpoint_path = join(checkpoint_dir, 'checkpoint.ckpt')
-                saver.save(sess, checkpoint_path, global_step=it)
+                model.save_weights()
 
 
     # Evaluate performance of model
