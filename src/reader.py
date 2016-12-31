@@ -23,20 +23,6 @@ def preprocess_report(report_text):
     cleaned_report = re.sub(' +',' ',cleaned_report)
     return cleaned_report
 
-def get_wordvec(vec_path, vocab):
-    '''
-    Return a dictionary of words -> id and associated embedding matrix
-    where words are in vocab.
-    Args:
-        vec_path - path to glove vector file
-        vocab - dictionary where keys are relevant words
-    Returns:
-        word_to_id : mapping between words and positions in embedding matrix
-        embedding_matrix : [id, embedding_len] matrix of word vectors
-    '''
-    return 
-
-
 class Reader:
 
     def __init__(self, data_paths):

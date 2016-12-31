@@ -3,6 +3,8 @@ import numpy as np
 import tensorflow as tf
 
 from os.path import join, dirname
+from layer_utils import *
+
 
 #TODO : apply gradient clipping
 def _train_op_init(total_loss, global_step):
@@ -22,40 +24,15 @@ def _train_op_init(total_loss, global_step):
     train_ops += tf.get_collection('update_ops')
     return train_ops
 
-# Compute softmax cross entropy loss
-def softmax_loss(logits, labels):
-    cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(logits,
-            labels, name='cross_entropy')
-    cross_entropy_mean = tf.reduce_mean(
-        cross_entropy, name='mean_cross_entropy')
-    tf.add_to_collection('losses', cross_entropy_mean)
-    return tf.add_n(tf.get_collection('losses'), name='total_loss')
-
-
-def dense(input_data, N, H, name):
-    """NN fully connected layer."""
-    with tf.variable_scope(name):  
-        W = tf.get_variable("W", [N, H],
-                initializer=tf.contrib.layers.xavier_initializer())   
-        b = tf.get_variable("b", [H], initializer=tf.constant_initializer(0))
-        return tf.matmul(input_data, W, name="matmul") + b
-
-def dense_relu(input_data, output_dim, name="dense_relu"):
-    """NN dense relu layer"""
-    batch_size, in_dim = input_data.get_shape()
-    with tf.variable_scope(name):
-        affine = dense(input_data, in_dim, output_dim, "dense")
-        return tf.nn.relu(affine, "relu")
-
-
 ### Models
 
 class Model:
     def __init__(self,  opts):
         self.opts = opts
         # Model input variables
-        self.x_in = tf.Placeholder(tf.float32, shape=(batch_size, sentence_len))
-        self.y_in = tf.Placeholder(tf.int64, shape=(batch_size))
+        self.x_in = tf.Placeholder(tf.float32,
+                shape=(self.opts.batch_size, self.opts.sentence_len))
+        self.y_in = tf.Placeholder(tf.int64, shape=(self.opts.batch_size))
         self.global_step = tf.Variable(0, trainable=False)
 
         # implementation left to different model classes
@@ -133,8 +110,30 @@ class LSTM_Model(Model):
 
 class CNN_Word_Model(Model):
 
+    def __init__(self, opts, embedding_np):
+        self.embedding_np = embedding_np
+        super(opts)
+
     def create_graph(self):
-        return 0
+
+        embedding = tf.get_variable(name="W", shape=embedding_np.shape,
+                initializer=tf.constant_initializer(self.embedding_np), trainable=False)
+        del self.embedding_np 
+        word_vecs = tf.nn.embedding_lookup(embedding, x_in)
+        conv1 = conv1d_relu() 
+        
+
+        # input_data : (batch_size, sentence_len, vec_len)
+        batch_size, sentence_len, embedding_len = input_data.get_shape()
+        input_data = tf.split(1, sentence_len, x_in)
+        with tf.variable_scope(name) as scope:
+            multi_lstm = tf.nn.rnn_cell.MultiRNNCell(
+                    [tf.nn.rnn_cell.BasicLSTMCell(hidden_size)] * num_layers)
+            state = multi_lstm.zero_state(batch_size, tf.float32)
+            for t in range(sentence_len):
+                output, state = multi_lstm(input_data[t], state)
+                scope.reuse_variables()
+        return output
 
 class CNN_Char_Model(Model):
 

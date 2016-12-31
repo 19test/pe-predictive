@@ -113,6 +113,4 @@ if __name__ == '__main__':
 
     # Evaluate performance of model
     with tf.Session() as sess:
-        all_ckpts = tf.train.get_checkpoint_state(checkpoint_dir)
-        saver.restore(sess, all_ckpts.model_checkpoint_path)
-        raise Exception('Not yet implemented')
+        model.restore_weights()
