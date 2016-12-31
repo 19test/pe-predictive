@@ -6,12 +6,13 @@ from tensorflow.python.training import moving_averages
 
 
 ######## LAYERS ########
-def dense(input_data, N, H, name):
+def dense(input_data, output_dim, name):
+    input_dim = input_data.get_shape().as_list()[-1]
     """NN fully connected layer."""
     with tf.variable_scope(name):  
-        W = tf.get_variable("W", [N, H],
+        W = tf.get_variable("W", [input_dim, output_dim],
                 initializer=tf.contrib.layers.xavier_initializer())   
-        b = tf.get_variable("b", [H], initializer=tf.constant_initializer(0))
+        b = tf.get_variable("b", [output_dim], initializer=tf.constant_initializer(0))
         return tf.matmul(input_data, W, name="matmul") + b
 
 def batch_normalization(input_data, is_train, name='BatchNormalization'):
@@ -99,7 +100,10 @@ def conv_words(input_data, window_size, num_filters, name):
         W = tf.get_variable("W", filter_size,
                 initializer=tf.contrib.layers.xavier_initializer())
         conv = tf.nn.conv2d(input_data, W, [1,1,1,1], padding='VALID')
-        return conv
+        biases = tf.get_variable("b", shape=filter_size[-1])
+        bias = tf.reshape(tf.nn.bias_add(conv, biases),
+                conv.get_shape().as_list())
+        return bias
 
 def maxpool2d(input_data, stride, name):
     """NN 2D max pooling layer."""
