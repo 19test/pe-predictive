@@ -1,8 +1,9 @@
+import tensorflow as tf
 import pandas as pd
 import numpy as np
-import tensorflow as tf
 import argparse
 import os
+import json
 
 from os.path import join, dirname
 from models import LSTM_Model, CNN_Word_Model
@@ -50,9 +51,10 @@ class GlobalOpts(object):
         self.archlog_dir = join(self.project_dir, 'log', name)
 
         # Print thresholds
-        SUMM_CHECK = 50
-        VAL_CHECK = 200
-        CHECKPOINT = 10000
+        self.SUMM_CHECK = 50
+        self.VAL_CHECK = 200
+        self.CHECKPOINT = 10000
+        self.MAX_ITERS = 20000
 
         # Common hyperparameters across all models
         self.batch_size = 32
@@ -118,16 +120,16 @@ if __name__ == '__main__':
             batchX, batchy = reader.sample_train()
             train_loss, train_acc = model.step(batchX, batchy, train=True)
 
-            if it % SUMM_CHECK == 0:
+            if it % opts.SUMM_CHECK == 0:
                 logger.log({'iter': it, 'mode': 'train','dataset': 'train',
                     'loss': train_loss, 'acc': train_acc})
-            if it != 0 and it % VAL_CHECK == 0:
+            if it != 0 and it % opts.VAL_CHECK == 0:
                 # Calculate validation accuracy
                 batchX, batchy = reader.sample_val()
                 val_loss, val_acc = model.step(batchX, batchy, train=False)
                 logger.log({'iter': it, 'mode': 'train', 'dataset': 'val',
                             'loss': val_loss, 'acc': val_acc})
-            if (it != 0 and it % CHECKPOINT == 0) or \
+            if (it != 0 and it % opts.CHECKPOINT == 0) or \
                     (it + 1) == opts.MAX_ITERS:
                 model.save_weights(it)
 

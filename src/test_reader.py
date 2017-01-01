@@ -32,12 +32,16 @@ class TestReader(unittest.TestCase):
                             (np.sum(embedding_np[word_id,:]), np.sum(word_vec))
 
     def test_sample_train(self):
-        result = self.reader.sample_train()
-        assert result.shape == (self.opts.batch_size, self.opts.sentence_len)
+        batchX, batchy = self.reader.sample_train()
+        assert batchX.shape == (self.opts.batch_size, self.opts.sentence_len)
+        assert batchy.shape == (self.opts.batch_size,)
+        assert np.min(batchy) >= 0 and np.max(batchy) <= 1
 
     def test_sample_val(self):
-        result = self.reader.sample_val()
-        assert result.shape == (self.opts.batch_size, self.opts.sentence_len)
+        batchX, batchy = self.reader.sample_val()
+        assert batchX.shape == (self.opts.batch_size, self.opts.sentence_len)
+        assert batchy.shape == (self.opts.batch_size,)
+        assert np.min(batchy) >= 0 and np.max(batchy) <= 1
 
 if __name__ == '__main__':
     unittest.main()

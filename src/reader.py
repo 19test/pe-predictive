@@ -66,8 +66,10 @@ class Reader:
                 size=train_size, replace=False)
         val_inds = [ind for ind in range(len(tokenized_examples))\
                 if ind not in train_inds]
-        self.train_set = [tokenized_examples[ind] for ind in train_inds]
-        self.val_set = [tokenized_examples[ind] for ind in val_inds]
+        self.trainX = [tokenized_examples[ind] for ind in train_inds]
+        self.trainy = [gt_labels[ind] for ind in train_inds]
+        self.valX = [tokenized_examples[ind] for ind in val_inds]
+        self.valy = [gt_labels[ind] for ind in val_inds]
          
 
 
@@ -106,15 +108,20 @@ class Reader:
 
     def _sample(self, set_name):
         assert set_name in ['train', 'val']
-        partition_set = self.train_set if set_name == 'train' else self.val_set
-        inds = np.random.choice(range(len(partition_set)),
+        setX = self.trainX if set_name == 'train' else self.valX
+        sety = self.trainy if set_name == 'train' else self.valy
+        inds = np.random.choice(range(len(setX)),
                 size=self.opts.batch_size, replace=False)
-        result = np.zeros((self.opts.batch_size, self.opts.sentence_len))
+        batchX = np.zeros((self.opts.batch_size, self.opts.sentence_len))
+        batchy = np.zeros(self.opts.batch_size) 
         for i in range(self.opts.batch_size):
             ind = inds[i]
-            example = partition_set[ind]
-            result[i,0:len(example)] = np.array(example)
-        return result
+            exampleX = setX[ind]
+            if len(exampleX) > self.opts.sentence_len:
+                exampleX = exampleX[0:self.opts.sentence_len]
+            batchX[i,0:len(exampleX)] = np.array(exampleX)
+            batchy[i] = sety[ind] 
+        return batchX, batchy
 
     def sample_train(self):
         return self._sample('train')

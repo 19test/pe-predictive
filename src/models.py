@@ -32,7 +32,7 @@ class Model(object):
         self.saver = tf.train.Saver(restore_variables)
 
         self.sess = tf.Session()
-        self.sess.run(tf.global_variables_initializer())
+        self.sess.run(tf.initialize_all_variables())
 
 
     #TODO : apply gradient clipping
@@ -129,7 +129,7 @@ class CNN_Word_Model(Model):
         del self.embedding_np 
         word_vecs = tf.nn.embedding_lookup(embedding, self.x_in)
         conv = conv_words(word_vecs, self.opts.window_size, self.opts.num_filters, 'conv')
-        maxpool = tf.squeeze(tf.reduce_max(conv, axis=1, name='maxpool'))
+        maxpool = tf.squeeze(tf.reduce_max(conv, 1, name='maxpool'))
         logits = dense(maxpool, 2, name='dense')
         return logits
 

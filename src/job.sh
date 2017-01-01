@@ -1,6 +1,5 @@
 #!/bin/bash
 
-module load opencv/2.4.9
 module load tensorflow/0.9.0
 source ../../tensorflow/bin/activate
 
