@@ -7,7 +7,6 @@ from os.path import join, dirname
 from layer_utils import *
 
 
-
 ### Models
 
 class Model(object):

@@ -25,10 +25,11 @@ def preprocess_report(report_text):
 
 class Reader:
 
-    def __init__(self, data_paths):
+    def __init__(self, opts, data_paths):
         '''
         Creates a reader instance to sample radiology reports
         '''
+        self.opts = opts
         TRAIN_PROPORTION = 0.8
 
         # Import radiology report data
@@ -103,8 +104,20 @@ class Reader:
         return embedding_np
 
 
-    def sample_train():
-        return 0
+    def _sample(self, set_name):
+        assert set_name in ['train', 'val']
+        partition_set = self.train_set if set_name == 'train' else self.val_set
+        inds = np.random.choice(range(len(partition_set)),
+                size=self.opts.batch_size, replace=False)
+        result = np.zeros((self.opts.batch_size, self.opts.sentence_len))
+        for i in range(self.opts.batch_size):
+            ind = inds[i]
+            example = partition_set[ind]
+            result[i,0:len(example)] = np.array(example)
+        return result
 
-    def sample_val():
-        return 0
+    def sample_train(self):
+        return self._sample('train')
+
+    def sample_val(self):
+        return self._sample('val')

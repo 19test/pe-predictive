@@ -2,9 +2,11 @@ import pandas as pd
 import numpy as np
 import tensorflow as tf
 import argparse
+import os
 
 from os.path import join, dirname
-from models import LSTM_Model
+from models import LSTM_Model, CNN_Word_Model
+from reader import Reader
 
 class Logger:
     '''
@@ -52,13 +54,15 @@ class GlobalOpts(object):
         VAL_CHECK = 200
         CHECKPOINT = 10000
 
+        # Common hyperparameters across all models
+        self.batch_size = 32
+        self.sentence_len = 1500
+
 class WordCNNOpts(GlobalOpts):
     def __init__(self, name):
         super(WordCNNOpts, self).__init__(name)
-        self.batch_size = 32
         self.window_size = 10
         self.num_filters = 50
-        self.sentence_len = 1500
 
 class LSTMOpts(GlobalOpts):
     def __init__(self, name):
@@ -77,25 +81,33 @@ class LSTMOpts(GlobalOpts):
         self.batch_size = 32
 
 
-
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(
         description='Text Classification Models for PE-Predictive Project')
     parser.add_argument('--arch', help='Network architecture',
                         type=str, required=True)
-    parse.add_arguement('--name', help='Name of directory to place output files in',
+    parser.add_argument('--name', help='Name of directory to place output files in',
                         type=str, required=True)
     args = parser.parse_args()
-
-    opts = LSTMOpts(args.name)
+    opts = WordCNNOpts(args.name)
     #data_paths = [join(opts.classifier_dir, 'chapman-data/chapman_df.tsv'),
     #                    join(opts.classifier_dir, 'stanford-data/stanford_df.tsv')]
     data_paths = [join(opts.classifier_dir, 'stanford-data/stanford_df.tsv')]
 
-    sampler = Sampler(data_paths=data_paths, embedding_path=opts.glove_path)
-    embedding_np = sampler.get_embeddings()
-    model = LSTM_Model(embedding_np, opts)
+    if not os.path.exists(opts.archlog_dir):
+        os.makedirs(opts.archlog_dir)
+    logger = Logger(opts.archlog_dir)
+
+    reader = Reader(opts=opts, data_paths=data_paths)
+    embedding_np = reader.get_embedding(opts.glove_path)
+
+    if args.arch == 'lstm':
+        model = LSTM_Model(opts, embedding_np)
+    elif args.arch == 'cnn_word':
+        model = CNN_Word_Model(opts, embedding_np)
+    else:
+        raise Exception('Input architecture not supported : %s' % args.arch)
 
     # Train model
     with tf.Session() as sess:
@@ -103,7 +115,7 @@ if __name__ == '__main__':
         for it in range(opts.MAX_ITERS):
 
             # Step of optimization method
-            batchX, batchy = sampler.sample_train()
+            batchX, batchy = reader.sample_train()
             train_loss, train_acc = model.step(batchX, batchy, train=True)
 
             if it % SUMM_CHECK == 0:
@@ -111,7 +123,7 @@ if __name__ == '__main__':
                     'loss': train_loss, 'acc': train_acc})
             if it != 0 and it % VAL_CHECK == 0:
                 # Calculate validation accuracy
-                batchX, batchy = sampler.sample_val()
+                batchX, batchy = reader.sample_val()
                 val_loss, val_acc = model.step(batchX, batchy, train=False)
                 logger.log({'iter': it, 'mode': 'train', 'dataset': 'val',
                             'loss': val_loss, 'acc': val_acc})

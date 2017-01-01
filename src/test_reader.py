@@ -10,7 +10,7 @@ class TestReader(unittest.TestCase):
     def setUp(self):
         self.opts = GlobalOpts('test')
         data_paths = [join(self.opts.classifier_dir, 'stanford-data/stanford_df.tsv')]
-        self.reader = Reader(data_paths=data_paths)
+        self.reader = Reader(opts=self.opts, data_paths=data_paths)
 
     def test_split_train(self):
         train_size = len(self.reader.train_set)
@@ -32,10 +32,12 @@ class TestReader(unittest.TestCase):
                             (np.sum(embedding_np[word_id,:]), np.sum(word_vec))
 
     def test_sample_train(self):
-        return
+        result = self.reader.sample_train()
+        assert result.shape == (self.opts.batch_size, self.opts.sentence_len)
 
     def test_sample_val(self):
-        return
+        result = self.reader.sample_val()
+        assert result.shape == (self.opts.batch_size, self.opts.sentence_len)
 
 if __name__ == '__main__':
     unittest.main()
