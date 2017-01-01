@@ -106,12 +106,23 @@ class Reader:
         return embedding_np
 
 
-    def _sample(self, set_name):
+    def _sample(self, set_name, balance=True):
         assert set_name in ['train', 'val']
         setX = self.trainX if set_name == 'train' else self.valX
         sety = self.trainy if set_name == 'train' else self.valy
-        inds = np.random.choice(range(len(setX)),
-                size=self.opts.batch_size, replace=False)
+        if balance:
+            assert self.opts.batch_size % 2 == 0
+            pos_inds = np.nonzero(np.array(sety))[0]
+            neg_inds = np.nonzero(1 - np.array(sety))[0]
+            sel_pos = np.random.choice(pos_inds,
+                    size=self.opts.batch_size/2, replace=True)
+            sel_neg = np.random.choice(neg_inds,
+                    size=self.opts.batch_size/2, replace=True)
+            inds = np.append(sel_pos, sel_neg)
+            np.random.shuffle(inds)
+        else:
+            inds = np.random.choice(range(len(setX)),
+                    size=self.opts.batch_size, replace=False)
         batchX = np.zeros((self.opts.batch_size, self.opts.sentence_len))
         batchy = np.zeros(self.opts.batch_size) 
         for i in range(self.opts.batch_size):
