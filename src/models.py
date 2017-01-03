@@ -16,6 +16,7 @@ class Model(object):
         self.x_in = tf.placeholder(tf.int64,
                 shape=(self.opts.batch_size, self.opts.sentence_len))
         self.y_in = tf.placeholder(tf.int64, shape=(self.opts.batch_size))
+        self.keep_prob = tf.placeholder(tf.float32)
         self.global_step = tf.Variable(0, trainable=False)
 
         # implementation left to different model classes
@@ -75,9 +76,12 @@ class Model(object):
         step_ops.append(self.loss)
         step_ops.append(self.acc)
         if train:
-          step_ops += self.train_op
-        result = self.sess.run(step_ops,
-                feed_dict={self.x_in:batchX, self.y_in:batchy})
+            step_ops += self.train_op
+            keep_prob = self.opts.keep_prob
+        else:
+            keep_prob = 1.0
+        result = self.sess.run(step_ops, feed_dict={self.x_in:batchX,
+            self.y_in:batchy, self.keep_prob:keep_prob})
         return result[0], result[1]
 
     def predict(self, batchX):
@@ -93,28 +97,23 @@ class LSTM_Model(Model):
         super(LSTM_Model, self).__init__(opts)
 
     def create_graph(self):
-        embedding_np = self.embedding_np
+
+        embedding = tf.get_variable(name="W", shape=self.embedding_np.shape,
+                initializer=tf.constant_initializer(self.embedding_np), trainable=False)
         del self.embedding_np
-
-        embedding = tf.get_variable(name="W", shape=embedding_np.shape,
-                initializer=tf.constant_initializer(embedding_np), trainable=False)
-        word_vecs = tf.nn.embedding_lookup(embedding, x_in)
+        word_vecs = tf.nn.embedding_lookup(embedding, self.x_in)
         
-
-        embedding_len = sampler.get_embedding_len()
-        logits = lstm(x_in, hiddens_size=hidden_size, num_layers=num_layers)
-
         # input_data : (batch_size, sentence_len, vec_len)
-        batch_size, sentence_len, embedding_len = input_data.get_shape()
-        input_data = tf.split(1, sentence_len, x_in)
-        with tf.variable_scope(name) as scope:
+        input_data = tf.split(1, self.opts.sentence_len, word_vecs)
+        with tf.variable_scope('lstm') as scope:
             multi_lstm = tf.nn.rnn_cell.MultiRNNCell(
-                    [tf.nn.rnn_cell.BasicLSTMCell(hidden_size)] * num_layers)
-            state = multi_lstm.zero_state(batch_size, tf.float32)
-            for t in range(sentence_len):
-                output, state = multi_lstm(input_data[t], state)
+                    [tf.nn.rnn_cell.BasicLSTMCell(self.opts.hidden_size)] * self.opts.num_layers)
+            state = multi_lstm.zero_state(self.opts.batch_size, tf.float32)
+            for t in range(self.opts.sentence_len):
+                output, state = multi_lstm(tf.squeeze(input_data[t]), state)
                 scope.reuse_variables()
-        return output
+        logits = dense(output, 2, name='dense')
+        return logits
 
 class CNN_Word_Model(Model):
 
@@ -129,8 +128,11 @@ class CNN_Word_Model(Model):
         del self.embedding_np 
         word_vecs = tf.nn.embedding_lookup(embedding, self.x_in)
         conv = conv_words(word_vecs, self.opts.window_size, self.opts.num_filters, 'conv')
-        maxpool = tf.squeeze(tf.reduce_max(conv, 1, name='maxpool'))
-        logits = dense(maxpool, 2, name='dense')
+        relu = tf.nn.relu(conv, name='relu')
+        maxpool = tf.squeeze(tf.reduce_max(relu, 1, name='maxpool'))
+        # consider replacing dropout with batch norm in future with more data
+        drop = tf.nn.dropout(maxpool, self.keep_prob)
+        logits = dense(drop, 2, name='dense')
         return logits
 
 

@@ -65,6 +65,7 @@ class WordCNNOpts(GlobalOpts):
         super(WordCNNOpts, self).__init__(name)
         self.window_size = 10
         self.num_filters = 50
+        self.keep_prob = 0.5
 
 class LSTMOpts(GlobalOpts):
     def __init__(self, name):
@@ -75,13 +76,34 @@ class LSTMOpts(GlobalOpts):
         self.max_grad_norm = 10
         self.num_layers = 2
         self.num_steps = 50
-        self.hidden_size = 1500
+        # Should be the same size as word embedding
+        self.hidden_size = 300
         self.max_epoch = 14
         self.max_max_epoch = 55
         self.keep_prob = 0.35
         self.lr_decay = 1 / 1.15
         self.batch_size = 32
 
+class ModelFactory(object):
+    def __init__(self, arch, name):
+        if arch == 'lstm':
+            self.opts = LSTMOpts(name)
+        elif arch == 'cnn_word':
+            self.opts = WordCNNOpts(name)
+        else:
+            raise Exception('Input architecture not supported : %s' % args.arch)
+        self.arch = arch
+        self.name = name
+
+    def get_opts(self):
+        return self.opts
+
+    def get_model(self, embedding_np):
+        if self.arch == 'lstm':
+            return LSTM_Model(self.opts, embedding_np)
+        elif self.arch == 'cnn_word':
+            return CNN_Word_Model(self.opts, embedding_np)
+        assert False
 
 if __name__ == '__main__':
 
@@ -92,10 +114,12 @@ if __name__ == '__main__':
     parser.add_argument('--name', help='Name of directory to place output files in',
                         type=str, required=True)
     args = parser.parse_args()
-    opts = WordCNNOpts(args.name)
+    factory = ModelFactory(args.arch, args.name)
+    opts = factory.get_opts()
     #data_paths = [join(opts.classifier_dir, 'chapman-data/chapman_df.tsv'),
     #                    join(opts.classifier_dir, 'stanford-data/stanford_df.tsv')]
-    data_paths = [join(opts.classifier_dir, 'stanford-data/stanford_df.tsv')]
+    #data_paths = [join(opts.classifier_dir, 'stanford-data/stanford_df.tsv')]
+    data_paths = [join(opts.project_dir, 'data', 'stanford_pe.tsv')]
 
     if not os.path.exists(opts.archlog_dir):
         os.makedirs(opts.archlog_dir)
@@ -103,13 +127,7 @@ if __name__ == '__main__':
 
     reader = Reader(opts=opts, data_paths=data_paths)
     embedding_np = reader.get_embedding(opts.glove_path)
-
-    if args.arch == 'lstm':
-        model = LSTM_Model(opts, embedding_np)
-    elif args.arch == 'cnn_word':
-        model = CNN_Word_Model(opts, embedding_np)
-    else:
-        raise Exception('Input architecture not supported : %s' % args.arch)
+    model = factory.get_model(embedding_np)
 
     # Train model
     with tf.Session() as sess:

@@ -6,7 +6,7 @@ source ../../tensorflow/bin/activate
 func ()
 {
 local arch=cnn_word
-local name=cnn_word
+local name=$arch
 
 python classifier.py --arch $arch --name $name
 }
