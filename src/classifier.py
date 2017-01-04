@@ -155,3 +155,4 @@ if __name__ == '__main__':
     # Evaluate performance of model
     with tf.Session() as sess:
         model.restore_weights()
+        model.pred(batchX)

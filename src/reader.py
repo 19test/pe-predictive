@@ -31,6 +31,8 @@ class Reader:
         '''
         self.opts = opts
         TRAIN_PROPORTION = 0.8
+        labelX_name = 'rad_report'
+        labely_name = 'disease_PEfinder'
 
         # Import radiology report data
         self.data = pd.DataFrame()
@@ -39,28 +41,31 @@ class Reader:
             self.data = self.data.append(data)
 
         # Preprocess data to remove artifact symbols
-        # can also use rad_report here for full report text
-        examples = [preprocess_report(report)\
-                for report in self.data['rad_report'].values]
-        gt_labels = self.data['disease_PEfinder'].values
+        self.data[labelX_name] = self.data[labelX_name].apply(lambda x : preprocess_report(x))
 
         # Get set of all words across all reports
         self.word_to_id = {}
         self.id_to_word = {}
         word_counter = 0
-        for report in examples:
+        for report in self.data[labelX_name].values:
             for word in report.split(' '):
                 if word not in self.word_to_id:
                     self.word_to_id[word] = word_counter
                     self.id_to_word[word_counter] = word
                     word_counter += 1
 
+        # Partition data into training, validation, and test set
+        test_df = self.data[self.data['PE_PRESENT_label'] \
+                in ['POSITIVE_PE', 'NEGATIVE_PE']]
+        trainval_df = self.data[self.data['PE_PRESENT_label'] \
+                not in ['POSITIVE_PE', 'NEGATIVE_PE']]
+
         # tokenize example data
         tokenized_examples = []
         for report in examples:
             tokenized_examples.append([self.word_to_id[word] for word in report.split(' ')])
 
-        # Partition data into training and validation set
+        test_inds = self.data['PE_PRESENT_label'].values
         train_size = int(TRAIN_PROPORTION * len(tokenized_examples))
         train_inds = np.random.choice(range(len(tokenized_examples)),
                 size=train_size, replace=False)
@@ -139,3 +144,12 @@ class Reader:
 
     def sample_val(self):
         return self._sample('val')
+    
+    def get_test_batches(self):
+        class BatchIterator(object):
+            def __init__(self):
+                self.i = 0
+            def __iter__(self):
+                return self
+            def next(self):
+                return
