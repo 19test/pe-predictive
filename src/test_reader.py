@@ -9,13 +9,15 @@ from classifier import GlobalOpts
 class TestReader(unittest.TestCase):
     def setUp(self):
         self.opts = GlobalOpts('test')
-        data_paths = [join(self.opts.classifier_dir, 'stanford-data/stanford_df.tsv')]
+        data_paths = [join(self.opts.project_dir, 'data', 'stanford_pe.tsv')]
         self.reader = Reader(opts=self.opts, data_paths=data_paths)
 
     def test_split_train(self):
-        train_size = len(self.reader.train_set)
-        val_size = len(self.reader.val_set)
-        assert self.reader.data.shape[0] == train_size + val_size        
+        train_size = len(self.reader.trainX)
+        val_size = len(self.reader.valX)
+        test_size = len(self.reader.testX)
+        print 'Sizes - Train : %d Val : %d Test : %d' % (train_size, val_size, test_size)
+        assert self.reader.data.shape[0] == train_size + val_size + test_size 
 
     def test_get_embedding(self):
         embedding_np = self.reader.get_embedding(self.opts.glove_path)
@@ -42,6 +44,32 @@ class TestReader(unittest.TestCase):
         assert batchX.shape == (self.opts.batch_size, self.opts.sentence_len)
         assert batchy.shape == (self.opts.batch_size,)
         assert np.min(batchy) >= 0 and np.max(batchy) <= 1
+
+    def test_get_test_batches(self):
+        test_batches = self.reader.get_test_batches()
+        testX = np.zeros((len(self.reader.testX),self.opts.sentence_len))
+        testy = np.array(self.reader.testy)
+        for ind in range(len(self.reader.testX)):
+            exampleX = self.reader.testX[ind][0:self.opts.sentence_len]
+            testX[ind,0:len(exampleX)] = exampleX
+        
+        all_batchX = None
+        all_batchy = None
+        for batchX, batchy in test_batches:
+            assert batchX.shape[0] == self.opts.batch_size
+            assert batchy.shape[0] == self.opts.batch_size
+            if all_batchX is None:
+                all_batchX = batchX
+                all_batchy = batchy
+            else:
+                all_batchX = np.vstack((all_batchX, batchX))
+                all_batchy = np.append(all_batchy, batchy)
+        all_batchX = all_batchX[0:test_batches.get_num_examples(),:]
+        all_batchy = all_batchy[0:test_batches.get_num_examples()]
+        assert all_batchX.shape == testX.shape
+        assert (all_batchX == testX).all()
+        assert all_batchy.shape == testy.shape
+        assert (all_batchy == testy).all()
 
 if __name__ == '__main__':
     unittest.main()

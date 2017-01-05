@@ -55,26 +55,28 @@ class Reader:
                     word_counter += 1
 
         # Partition data into training, validation, and test set
-        test_df = self.data[self.data['PE_PRESENT_label'] \
-                in ['POSITIVE_PE', 'NEGATIVE_PE']]
-        trainval_df = self.data[self.data['PE_PRESENT_label'] \
-                not in ['POSITIVE_PE', 'NEGATIVE_PE']]
+        test_inds = (self.data['PE_PRESENT_label']=='POSITIVE_PE') \
+                | (self.data['PE_PRESENT_label']=='NEGATIVE_PE')
+        test_df = self.data[test_inds]
+        trainval_df = self.data[np.logical_not(test_inds)] 
+        train_size = int(TRAIN_PROPORTION * trainval_df.shape[0])
+        train_inds = np.random.choice(range(trainval_df.shape[0]),
+                size=train_size, replace=False)
+        train_inds = np.array([ind in train_inds for ind in range(trainval_df.shape[0])])
+        train_df = trainval_df[train_inds]
+        val_df = trainval_df[np.logical_not(train_inds)]
 
         # tokenize example data
-        tokenized_examples = []
-        for report in examples:
-            tokenized_examples.append([self.word_to_id[word] for word in report.split(' ')])
+        def tokenize(report):
+            return [self.word_to_id[word] for word in report.split(' ')]
 
-        test_inds = self.data['PE_PRESENT_label'].values
-        train_size = int(TRAIN_PROPORTION * len(tokenized_examples))
-        train_inds = np.random.choice(range(len(tokenized_examples)),
-                size=train_size, replace=False)
-        val_inds = [ind for ind in range(len(tokenized_examples))\
-                if ind not in train_inds]
-        self.trainX = [tokenized_examples[ind] for ind in train_inds]
-        self.trainy = [gt_labels[ind] for ind in train_inds]
-        self.valX = [tokenized_examples[ind] for ind in val_inds]
-        self.valy = [gt_labels[ind] for ind in val_inds]
+        self.trainX = [tokenize(report) for report in train_df[labelX_name]]
+        self.trainy = train_df[labely_name].values.tolist()
+        self.valX = [tokenize(report) for report in val_df[labelX_name]]
+        self.valy = val_df[labely_name].values.tolist()
+        self.testX = [tokenize(report) for report in test_df[labelX_name]]
+        self.testy = test_df['PE_PRESENT_label'].values.tolist()
+        self.testy = [1 if label == 'POSITIVE_PE' else 0 for label in self.testy]
          
 
 
@@ -147,9 +149,29 @@ class Reader:
     
     def get_test_batches(self):
         class BatchIterator(object):
-            def __init__(self):
+            def __init__(self, setX, sety, batch_size, sentence_len):
+                self.setX = setX
+                self.sety = sety
+                self.batch_size = batch_size
+                self.sentence_len = sentence_len
                 self.i = 0
             def __iter__(self):
                 return self
+            def get_num_examples(self):
+                return len(self.setX)
             def next(self):
-                return
+                if self.i >= self.get_num_examples():
+                    raise StopIteration()
+                batchX = np.zeros((self.batch_size, self.sentence_len))
+                batchy = np.zeros(self.batch_size)
+                for ind in range(self.batch_size):
+                    exampleX = self.setX[self.i][0:self.sentence_len]
+                    batchX[ind,0:len(exampleX)] = exampleX
+                    batchy[ind] = self.sety[self.i]
+                    self.i += 1
+                    if self.i >= self.get_num_examples():
+                        break
+                return batchX, batchy
+
+        return BatchIterator(self.testX, self.testy,
+                self.opts.batch_size, self.opts.sentence_len)

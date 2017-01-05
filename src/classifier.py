@@ -155,4 +155,20 @@ if __name__ == '__main__':
     # Evaluate performance of model
     with tf.Session() as sess:
         model.restore_weights()
-        model.pred(batchX)
+        result = None
+        gt = None
+        for batchX, batchy in reader.get_test_batches():
+            output = model.pred(batchX)
+            if result is None:
+                result = output
+                gt = batchy
+            else:
+                result = np.vstack((result, output))
+                gt = np.vstack((gt, batchy))
+        test_acc = result == gt
+        test_prec = np.mean(gt[result==1])
+        test_recall = np.mean(result[gt==1])
+        print 'Test Set Evaluation'
+        print 'Accuracy : %f' % test_acc
+        print 'Precision : %f' % test_prec
+        print 'Recall : %f' % test_recall
