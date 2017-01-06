@@ -109,10 +109,12 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(
         description='Text Classification Models for PE-Predictive Project')
+    parser.add_argument('--runtype', help='train or test',
+            type=str, required=True)
     parser.add_argument('--arch', help='Network architecture',
-                        type=str, required=True)
+            type=str, required=True)
     parser.add_argument('--name', help='Name of directory to place output files in',
-                        type=str, required=True)
+            type=str, required=True)
     args = parser.parse_args()
     factory = ModelFactory(args.arch, args.name)
     opts = factory.get_opts()
@@ -129,46 +131,50 @@ if __name__ == '__main__':
     embedding_np = reader.get_embedding(opts.glove_path)
     model = factory.get_model(embedding_np)
 
-    # Train model
-    with tf.Session() as sess:
-        sess.run(tf.initialize_all_variables())
-        for it in range(opts.MAX_ITERS):
+    if args.runtype == 'train':
+        # Train model
+        with tf.Session() as sess:
+            sess.run(tf.initialize_all_variables())
+            for it in range(opts.MAX_ITERS):
 
-            # Step of optimization method
-            batchX, batchy = reader.sample_train()
-            train_loss, train_acc = model.step(batchX, batchy, train=True)
+                # Step of optimization method
+                batchX, batchy = reader.sample_train()
+                train_loss, train_acc = model.step(batchX, batchy, train=True)
 
-            if it % opts.SUMM_CHECK == 0:
-                logger.log({'iter': it, 'mode': 'train','dataset': 'train',
-                    'loss': train_loss, 'acc': train_acc})
-            if it != 0 and it % opts.VAL_CHECK == 0:
-                # Calculate validation accuracy
-                batchX, batchy = reader.sample_val()
-                val_loss, val_acc = model.step(batchX, batchy, train=False)
-                logger.log({'iter': it, 'mode': 'train', 'dataset': 'val',
-                            'loss': val_loss, 'acc': val_acc})
-            if (it != 0 and it % opts.CHECKPOINT == 0) or \
-                    (it + 1) == opts.MAX_ITERS:
-                model.save_weights(it)
+                if it % opts.SUMM_CHECK == 0:
+                    logger.log({'iter': it, 'mode': 'train','dataset': 'train',
+                        'loss': train_loss, 'acc': train_acc})
+                if it != 0 and it % opts.VAL_CHECK == 0:
+                    # Calculate validation accuracy
+                    batchX, batchy = reader.sample_val()
+                    val_loss, val_acc = model.step(batchX, batchy, train=False)
+                    logger.log({'iter': it, 'mode': 'train', 'dataset': 'val',
+                                'loss': val_loss, 'acc': val_acc})
+                if (it != 0 and it % opts.CHECKPOINT == 0) or \
+                        (it + 1) == opts.MAX_ITERS:
+                    model.save_weights(it)
 
+    elif args.runtype == 'test':
+        # Evaluate performance of model
+        with tf.Session() as sess:
+            model.restore_weights()
+            result = None
+            gt = None
+            for batchX, batchy in reader.get_test_batches():
+                output = model.predict(batchX)
+                if result is None:
+                    result = output
+                    gt = batchy
+                else:
+                    result = np.vstack((result, output))
+                    gt = np.vstack((gt, batchy))
+            test_acc = np.mean(result == gt)
+            test_prec = np.mean(gt[result==1])
+            test_recall = np.mean(result[gt==1])
+            print 'Test Set Evaluation'
+            print 'Accuracy : %f' % test_acc
+            print 'Precision : %f' % test_prec
+            print 'Recall : %f' % test_recall
 
-    # Evaluate performance of model
-    with tf.Session() as sess:
-        model.restore_weights()
-        result = None
-        gt = None
-        for batchX, batchy in reader.get_test_batches():
-            output = model.pred(batchX)
-            if result is None:
-                result = output
-                gt = batchy
-            else:
-                result = np.vstack((result, output))
-                gt = np.vstack((gt, batchy))
-        test_acc = result == gt
-        test_prec = np.mean(gt[result==1])
-        test_recall = np.mean(result[gt==1])
-        print 'Test Set Evaluation'
-        print 'Accuracy : %f' % test_acc
-        print 'Precision : %f' % test_prec
-        print 'Recall : %f' % test_recall
+    else:
+        raise Exception('Unsupported Runtype : %s' % args.runtype)

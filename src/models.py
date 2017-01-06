@@ -86,7 +86,7 @@ class Model(object):
 
     def predict(self, batchX):
         scores = self.sess.run(self.pred, feed_dict={self.x_in:batchX,
-            self.y_in:np.random.rand(self.opts.batch_size)})
+            self.y_in:np.random.rand(self.opts.batch_size), self.keep_prob:1.0})
         prediction = np.argmax(scores, axis=1)
         return prediction
 

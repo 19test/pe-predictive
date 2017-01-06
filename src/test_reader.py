@@ -1,23 +1,23 @@
+from classifier import GlobalOpts
+
 import unittest
 import numpy as np
 from os.path import join, dirname
 from reader import Reader
 
-from classifier import GlobalOpts
-
-
 class TestReader(unittest.TestCase):
     def setUp(self):
         self.opts = GlobalOpts('test')
-        data_paths = [join(self.opts.project_dir, 'data', 'stanford_pe.tsv')]
-        self.reader = Reader(opts=self.opts, data_paths=data_paths)
+        self.data_paths = [join(self.opts.project_dir, 'data', 'stanford_pe.tsv')]
+        self.reader = Reader(opts=self.opts, data_paths=self.data_paths)
 
     def test_split_train(self):
         train_size = len(self.reader.trainX)
         val_size = len(self.reader.valX)
         test_size = len(self.reader.testX)
+        df_size = pd.read_csv(self.data_paths[0],sep='\t').shape[0]
         print 'Sizes - Train : %d Val : %d Test : %d' % (train_size, val_size, test_size)
-        assert self.reader.data.shape[0] == train_size + val_size + test_size 
+        assert df_size == train_size + val_size + test_size 
 
     def test_get_embedding(self):
         embedding_np = self.reader.get_embedding(self.opts.glove_path)

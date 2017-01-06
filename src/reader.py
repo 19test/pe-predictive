@@ -35,19 +35,19 @@ class Reader:
         labely_name = 'disease_PEfinder'
 
         # Import radiology report data
-        self.data = pd.DataFrame()
+        data = pd.DataFrame()
         for path in data_paths:
             data = pd.read_csv(path,sep="\t",index_col=0)
-            self.data = self.data.append(data)
+            data = data.append(data)
 
         # Preprocess data to remove artifact symbols
-        self.data[labelX_name] = self.data[labelX_name].apply(lambda x : preprocess_report(x))
+        data[labelX_name] = data[labelX_name].apply(lambda x : preprocess_report(x))
 
         # Get set of all words across all reports
         self.word_to_id = {}
         self.id_to_word = {}
         word_counter = 0
-        for report in self.data[labelX_name].values:
+        for report in data[labelX_name].values:
             for word in report.split(' '):
                 if word not in self.word_to_id:
                     self.word_to_id[word] = word_counter
@@ -55,10 +55,12 @@ class Reader:
                     word_counter += 1
 
         # Partition data into training, validation, and test set
-        test_inds = (self.data['PE_PRESENT_label']=='POSITIVE_PE') \
-                | (self.data['PE_PRESENT_label']=='NEGATIVE_PE')
-        test_df = self.data[test_inds]
-        trainval_df = self.data[np.logical_not(test_inds)] 
+        test_inds = (data['PE_PRESENT_label']=='POSITIVE_PE') \
+                | (data['PE_PRESENT_label']=='NEGATIVE_PE')
+        test_df = data[test_inds]
+        #trainval_df = data[np.logical_not(test_inds)] 
+        # TODO : WARNING - current overlap of trainval and test data
+        trainval_df = data
         train_size = int(TRAIN_PROPORTION * trainval_df.shape[0])
         train_inds = np.random.choice(range(trainval_df.shape[0]),
                 size=train_size, replace=False)
