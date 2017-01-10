@@ -33,7 +33,7 @@ class Model(object):
         self.saver = tf.train.Saver(restore_variables)
 
         self.sess = tf.Session()
-        self.sess.run(tf.initialize_all_variables())
+        self.sess.run(tf.global_variables_initializer())
 
 
     #TODO : apply gradient clipping
@@ -99,7 +99,8 @@ class LSTM_Model(Model):
     def create_graph(self):
 
         embedding = tf.get_variable(name="W", shape=self.embedding_np.shape,
-                initializer=tf.constant_initializer(self.embedding_np), trainable=False)
+                initializer=tf.constant_initializer(self.embedding_np),
+                trainable=False)
         del self.embedding_np
         word_vecs = tf.nn.embedding_lookup(embedding, self.x_in)
         
@@ -107,7 +108,8 @@ class LSTM_Model(Model):
         input_data = tf.split(1, self.opts.sentence_len, word_vecs)
         with tf.variable_scope('lstm') as scope:
             multi_lstm = tf.nn.rnn_cell.MultiRNNCell(
-                    [tf.nn.rnn_cell.BasicLSTMCell(self.opts.hidden_size)] * self.opts.num_layers)
+                    [tf.nn.rnn_cell.BasicLSTMCell(self.opts.hidden_size)] * \
+                            self.opts.num_layers)
             state = multi_lstm.zero_state(self.opts.batch_size, tf.float32)
             for t in range(self.opts.sentence_len):
                 output, state = multi_lstm(tf.squeeze(input_data[t]), state)
@@ -124,10 +126,12 @@ class CNN_Word_Model(Model):
     def create_graph(self):
 
         embedding = tf.get_variable(name="W", shape=self.embedding_np.shape,
-                initializer=tf.constant_initializer(self.embedding_np), trainable=False)
+                initializer=tf.constant_initializer(self.embedding_np), 
+                trainable=False)
         del self.embedding_np 
         word_vecs = tf.nn.embedding_lookup(embedding, self.x_in)
-        conv = conv_words(word_vecs, self.opts.window_size, self.opts.num_filters, 'conv')
+        conv = conv_words(word_vecs, self.opts.window_size, 
+                self.opts.num_filters, 'conv')
         relu = tf.nn.relu(conv, name='relu')
         maxpool = tf.squeeze(tf.reduce_max(relu, 1, name='maxpool'))
         # consider replacing dropout with batch norm in future with more data

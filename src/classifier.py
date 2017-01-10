@@ -49,6 +49,9 @@ class GlobalOpts(object):
         self.checkpoint_dir = join(self.project_dir, 'checkpoints')
         self.glove_path = join(self.project_dir, 'data', 'glove.42B.300d.txt')
         self.archlog_dir = join(self.project_dir, 'log', name)
+        self.partition_dir = join(self.project_dir, 'partition')
+        
+        self.data_path = join(self.project_dir, 'data', 'stanford_pe.tsv')
 
         # Print thresholds
         self.SUMM_CHECK = 50
@@ -57,6 +60,7 @@ class GlobalOpts(object):
         self.MAX_ITERS = 20000
 
         # Common hyperparameters across all models
+        self.full_report = False
         self.batch_size = 32
         self.sentence_len = 1500
 
@@ -106,6 +110,8 @@ class ModelFactory(object):
         assert False
 
 if __name__ == '__main__':
+    tf.set_random_seed(1)
+    np.random.seed(1)
 
     parser = argparse.ArgumentParser(
         description='Text Classification Models for PE-Predictive Project')
@@ -113,28 +119,32 @@ if __name__ == '__main__':
             type=str, required=True)
     parser.add_argument('--arch', help='Network architecture',
             type=str, required=True)
-    parser.add_argument('--name', help='Name of directory to place output files in',
+    parser.add_argument('--name',
+            help='Name of directory to place output files in',
             type=str, required=True)
+    parser.add_argument('--partition',
+            help='Way to split data into train/val/test set', required=True)
+    parser.add_argument('-full_report', action='store_true',
+            help='use full report text - otherwise use impression input')
     args = parser.parse_args()
     factory = ModelFactory(args.arch, args.name)
     opts = factory.get_opts()
-    #data_paths = [join(opts.classifier_dir, 'chapman-data/chapman_df.tsv'),
-    #                    join(opts.classifier_dir, 'stanford-data/stanford_df.tsv')]
-    #data_paths = [join(opts.classifier_dir, 'stanford-data/stanford_df.tsv')]
-    data_paths = [join(opts.project_dir, 'data', 'stanford_pe.tsv')]
+    opts.partition = args.partition
+    opts.full_report = args.full_report
+
 
     if not os.path.exists(opts.archlog_dir):
         os.makedirs(opts.archlog_dir)
     logger = Logger(opts.archlog_dir)
 
-    reader = Reader(opts=opts, data_paths=data_paths)
+    reader = Reader(opts=opts)
     embedding_np = reader.get_embedding(opts.glove_path)
     model = factory.get_model(embedding_np)
 
     if args.runtype == 'train':
         # Train model
         with tf.Session() as sess:
-            sess.run(tf.initialize_all_variables())
+            sess.run(tf.global_variables_initializer())
             for it in range(opts.MAX_ITERS):
 
                 # Step of optimization method

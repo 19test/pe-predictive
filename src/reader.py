@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import re
 
+from os.path import join
 
 def preprocess_report(report_text):
     '''
@@ -23,26 +24,31 @@ def preprocess_report(report_text):
     cleaned_report = re.sub(' +',' ',cleaned_report)
     return cleaned_report
 
+def split_data(data, partition_dir, partition):
+    train_partition = pd.read_csv(join(partition_dir, partition, 'train.csv'))
+    val_partition = pd.read_csv(join(partition_dir, partition, 'val.csv'))
+    test_partition = pd.read_csv(join(partition_dir, partition, 'test.csv'))
+    train_df = data.merge(train_partition, on='report_id')
+    val_df = data.merge(val_partition, on='report_id')
+    test_df = data.merge(test_partition, on='report_id')
+    return train_df, val_df, test_df
+
 class Reader:
 
-    def __init__(self, opts, data_paths):
+    def __init__(self, opts):
         '''
         Creates a reader instance to sample radiology reports
         '''
         self.opts = opts
-        TRAIN_PROPORTION = 0.8
-        labelX_name = 'rad_report'
-        labely_name = 'disease_PEfinder'
+        labelX_name = 'rad_report' if opts.full_report else 'report_text'
+        labely_name = 'label'
 
         # Import radiology report data
-        data = pd.DataFrame()
-        for path in data_paths:
-            data = pd.read_csv(path,sep="\t",index_col=0)
-            data = data.append(data)
+        data = pd.read_csv(opts.data_path,sep="\t",index_col=0)
 
         # Preprocess data to remove artifact symbols
-        data[labelX_name] = data[labelX_name].apply(lambda x : preprocess_report(x))
-
+        data[labelX_name] = data[labelX_name].apply(
+                lambda x : preprocess_report(x))
         # Get set of all words across all reports
         self.word_to_id = {}
         self.id_to_word = {}
@@ -54,19 +60,8 @@ class Reader:
                     self.id_to_word[word_counter] = word
                     word_counter += 1
 
-        # Partition data into training, validation, and test set
-        test_inds = (data['PE_PRESENT_label']=='POSITIVE_PE') \
-                | (data['PE_PRESENT_label']=='NEGATIVE_PE')
-        test_df = data[test_inds]
-        #trainval_df = data[np.logical_not(test_inds)] 
-        # TODO : WARNING - current overlap of trainval and test data
-        trainval_df = data
-        train_size = int(TRAIN_PROPORTION * trainval_df.shape[0])
-        train_inds = np.random.choice(range(trainval_df.shape[0]),
-                size=train_size, replace=False)
-        train_inds = np.array([ind in train_inds for ind in range(trainval_df.shape[0])])
-        train_df = trainval_df[train_inds]
-        val_df = trainval_df[np.logical_not(train_inds)]
+        train_df, val_df, test_df = split_data(data,
+                opts.partition_dir, opts.partition)
 
         # tokenize example data
         def tokenize(report):
@@ -77,10 +72,15 @@ class Reader:
         self.valX = [tokenize(report) for report in val_df[labelX_name]]
         self.valy = val_df[labely_name].values.tolist()
         self.testX = [tokenize(report) for report in test_df[labelX_name]]
-        self.testy = test_df['PE_PRESENT_label'].values.tolist()
-        self.testy = [1 if label == 'POSITIVE_PE' else 0 for label in self.testy]
-         
-
+        self.testy = test_df[labely_name].values.tolist()
+        
+        # Print stats on split
+        print 'Train - Size : %d - Pct_POS : %f' % \
+                (len(self.trainy), np.mean(self.trainy))
+        print 'Val - Size : %d - Pct_POS : %f' % \
+                (len(self.valy), np.mean(self.valy))
+        print 'Test - Size : %d - Pct_POS : %f' % \
+                (len(self.testy), np.mean(self.testy))
 
     def get_embedding(self, embedding_path):
         '''
