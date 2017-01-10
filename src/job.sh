@@ -6,7 +6,7 @@ source ../../tensorflow/bin/activate
 func ()
 {
 local arch=cnn_word
-local partition=human_annot_only
+local partition=pefinder_augment
 local name=${arch}_${partition}_impression
 
 #python create_partition.py --partition $partition

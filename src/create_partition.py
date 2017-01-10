@@ -41,7 +41,7 @@ if __name__ == '__main__':
         #trainval_df = data[np.logical_not(test_inds)] 
         # TODO : WARNING - current overlap of trainval and test data
         trainval_df = data
-        trainval_df['label'] = 'disease_PEfinder'
+        trainval_df['label'] = trainval_df['disease_PEfinder']
         train_size = int(TRAIN_PROPORTION * trainval_df.shape[0])
         train_inds = np.random.choice(range(trainval_df.shape[0]),
                 size=train_size, replace=False)

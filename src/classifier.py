@@ -109,6 +109,19 @@ class ModelFactory(object):
             return CNN_Word_Model(self.opts, embedding_np)
         assert False
 
+def print_error_analysis(reader, pred, gt):
+    assert len(pred) == len(gt)
+    assert len(reader.testX) == len(pred)
+    total = np.sum(pred != gt)
+    counter = 0
+    for ind in range(len(pred)):
+        if pred[ind] != gt[ind]:
+            text = reader.testX[ind]
+            counter += 1
+            print '----------Example %d / %d ------------' % (counter, total)
+            print 'Label : %s - Pred : %s' % (gt[ind], pred[ind])
+            print ' '.join(text)
+
 if __name__ == '__main__':
     tf.set_random_seed(1)
     np.random.seed(1)
@@ -126,6 +139,8 @@ if __name__ == '__main__':
             help='Way to split data into train/val/test set', required=True)
     parser.add_argument('-full_report', action='store_true',
             help='use full report text - otherwise use impression input')
+    parser.add_argument('-error_analysis', action='store_true',
+            help='Print text of examples which were predicted incorrectly')
     args = parser.parse_args()
     factory = ModelFactory(args.arch, args.name)
     opts = factory.get_opts()
@@ -185,6 +200,8 @@ if __name__ == '__main__':
             print 'Accuracy : %f' % test_acc
             print 'Precision : %f' % test_prec
             print 'Recall : %f' % test_recall
+            if args.error_analysis:
+                print_error_analysis(reader, result, gt)
 
     else:
         raise Exception('Unsupported Runtype : %s' % args.runtype)
