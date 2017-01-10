@@ -44,12 +44,13 @@ class Logger:
 class GlobalOpts(object):
     def __init__(self, name):
         # Directory structure
-        self.project_dir = join(dirname(__file__), '..')
+        self.project_dir = join(dirname(__file__), '..', '..','..')
         self.classifier_dir = join(self.project_dir, 'classifiers')
-        self.checkpoint_dir = join(self.project_dir, 'checkpoints')
+        self.cnn_model_dir = join(self.classifier_dir, 'cnn_model')
+        self.checkpoint_dir = join(self.cnn_model_dir, 'checkpoints')
         self.glove_path = join(self.project_dir, 'data', 'glove.42B.300d.txt')
-        self.archlog_dir = join(self.project_dir, 'log', name)
-        self.partition_dir = join(self.project_dir, 'partition')
+        self.archlog_dir = join(self.cnn_model_dir, 'log', name)
+        self.partition_dir = join(self.cnn_model_dir, 'partition')
         
         self.data_path = join(self.project_dir, 'data', 'stanford_pe.tsv')
 

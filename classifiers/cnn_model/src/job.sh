@@ -8,7 +8,15 @@
 
 
 module load tensorflow/0.12.1
-source ../../tensorflow/bin/activate
+source ~/tensorflow/bin/activate
+
+
+# Download glove vectors
+wget http://nlp.stanford.edu/data/glove.42B.300d.zip
+unzip glove.42B.300d.zip
+mv glove.42B.300d.txt ../../../data/
+rm glove.42B.300d.zip
+# stanford_pe.tsv file also needs to be downloaded into data folder
 
 func ()
 {
@@ -30,7 +38,7 @@ python classifier.py \
     --arch $arch \
     --partition $partition \
     --name $name \
-    -error_analysis
+#    -error_analysis
 }
 
 func
