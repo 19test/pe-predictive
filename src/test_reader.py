@@ -2,22 +2,25 @@ from classifier import GlobalOpts
 
 import unittest
 import numpy as np
+import pandas as pd
 from os.path import join, dirname
 from reader import Reader
 
 class TestReader(unittest.TestCase):
     def setUp(self):
         self.opts = GlobalOpts('test')
-        self.data_paths = [join(self.opts.project_dir, 'data', 'stanford_pe.tsv')]
-        self.reader = Reader(opts=self.opts, data_paths=self.data_paths)
+        self.opts.partition = 'human_annot_only'
+        self.reader = Reader(opts=self.opts)
 
     def test_split_train(self):
         train_size = len(self.reader.trainX)
         val_size = len(self.reader.valX)
         test_size = len(self.reader.testX)
-        df_size = pd.read_csv(self.data_paths[0],sep='\t').shape[0]
-        print 'Sizes - Train : %d Val : %d Test : %d' % (train_size, val_size, test_size)
-        assert df_size == train_size + val_size + test_size 
+        df_size = pd.read_csv(self.opts.data_path,sep='\t').shape[0]
+        print 'Sizes - Train : %d Val : %d Test : %d' % (train_size,
+                val_size, test_size)
+        assert df_size == train_size + val_size + test_size, \
+                [df_size, train_size, val_size, test_size]
 
     def test_get_embedding(self):
         embedding_np = self.reader.get_embedding(self.opts.glove_path)

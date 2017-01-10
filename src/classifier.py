@@ -110,8 +110,8 @@ class ModelFactory(object):
         assert False
 
 def print_error_analysis(reader, pred, gt):
-    assert len(pred) == len(gt)
-    assert len(reader.testX) == len(pred)
+    assert len(pred) == len(gt), [len(pred), len(gt)]
+    assert len(reader.testX) == len(pred), [len(reader.testX), len(pred)]
     total = np.sum(pred != gt)
     counter = 0
     for ind in range(len(pred)):
@@ -120,7 +120,7 @@ def print_error_analysis(reader, pred, gt):
             counter += 1
             print '----------Example %d / %d ------------' % (counter, total)
             print 'Label : %s - Pred : %s' % (gt[ind], pred[ind])
-            print ' '.join(text)
+            print ' '.join([reader.id_to_word[word_id] for word_id in text])
 
 if __name__ == '__main__':
     tf.set_random_seed(1)
@@ -185,14 +185,19 @@ if __name__ == '__main__':
             model.restore_weights()
             result = None
             gt = None
-            for batchX, batchy in reader.get_test_batches():
+            test_batch_iter = reader.get_test_batches()
+            test_size = test_batch_iter.get_num_examples()
+            for batchX, batchy in test_batch_iter:
                 output = model.predict(batchX)
                 if result is None:
                     result = output
                     gt = batchy
                 else:
-                    result = np.vstack((result, output))
-                    gt = np.vstack((gt, batchy))
+                    result = np.append(result, output)
+                    gt = np.append(gt, batchy)
+            result = result[0:test_size]
+            gt = gt[0:test_size]
+
             test_acc = np.mean(result == gt)
             test_prec = np.mean(gt[result==1])
             test_recall = np.mean(result[gt==1])

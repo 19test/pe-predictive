@@ -34,6 +34,10 @@ def split_data(data, partition_dir, partition):
     return train_df, val_df, test_df
 
 class Reader:
+    '''
+    Input class that splits dataset into train/val/test and tokenizes
+    the words into embedded vectors. Also handles importing of Glove vectors.
+    '''
 
     def __init__(self, opts):
         '''
