@@ -33,6 +33,7 @@ def split_data(data, partition_dir, partition):
     test_df = data.merge(test_partition, on='report_id')
     return train_df, val_df, test_df
 
+
 class Reader:
     '''
     Input class that splits dataset into train/val/test and tokenizes
@@ -48,23 +49,23 @@ class Reader:
         labely_name = 'label'
 
         # Import radiology report data
-        data = pd.read_csv(opts.data_path,sep="\t",index_col=0)
+        report_data = pd.read_csv(opts.report_data_path,sep="\t",index_col=0)
 
-        # Preprocess data to remove artifact symbols
-        data[labelX_name] = data[labelX_name].apply(
+        # Preprocess report_data to remove artifact symbols
+        report_data[labelX_name] = report_data[labelX_name].apply(
                 lambda x : preprocess_report(x))
         # Get set of all words across all reports
         self.word_to_id = {}
         self.id_to_word = {}
         word_counter = 0
-        for report in data[labelX_name].values:
+        for report in report_data[labelX_name].values:
             for word in report.split(' '):
                 if word not in self.word_to_id:
                     self.word_to_id[word] = word_counter
                     self.id_to_word[word_counter] = word
                     word_counter += 1
 
-        train_df, val_df, test_df = split_data(data,
+        train_df, val_df, test_df = split_data(report_data,
                 opts.partition_dir, opts.partition)
 
         # tokenize example data

@@ -13,14 +13,24 @@ class TestReader(unittest.TestCase):
         self.reader = Reader(opts=self.opts)
 
     def test_split_train(self):
+        train_partition = pd.read_csv(join(self.opts.partition_dir,
+            self.opts.partition, 'train.csv'))
+        val_partition = pd.read_csv(join(self.opts.partition_dir, 
+            self.opts.partition, 'val.csv'))
+        test_partition = pd.read_csv(join(self.opts.partition_dir, 
+            self.opts.partition, 'test.csv'))
+        total_size = train_partition.shape[0] + \
+                val_partition.shape[0] + test_partition.shape[0]
+        all_data = train_partition.append(val_partition).append(test_partition)
+        assert np.unique(all_data['report_id'].values).shape[0] == total_size
+
         train_size = len(self.reader.trainX)
         val_size = len(self.reader.valX)
         test_size = len(self.reader.testX)
-        df_size = pd.read_csv(self.opts.data_path,sep='\t').shape[0]
         print 'Sizes - Train : %d Val : %d Test : %d' % (train_size,
                 val_size, test_size)
-        assert df_size == train_size + val_size + test_size, \
-                [df_size, train_size, val_size, test_size]
+        assert total_size == train_size + val_size + test_size, \
+                [total_size, train_size, val_size, test_size]
 
     def test_get_embedding(self):
         embedding_np = self.reader.get_embedding(self.opts.glove_path)

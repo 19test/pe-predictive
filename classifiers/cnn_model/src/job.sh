@@ -10,28 +10,30 @@
 module load tensorflow/0.12.1
 source ~/tensorflow/bin/activate
 
+PROJ_DIR=../../../
 
 # Download glove vectors
+if [ ! -f "${PROJ_DIR}/data/glove.42B.300d.txt"];
+then
 wget http://nlp.stanford.edu/data/glove.42B.300d.zip
 unzip glove.42B.300d.zip
 mv glove.42B.300d.txt ../../../data/
 rm glove.42B.300d.zip
 # stanford_pe.tsv file also needs to be downloaded into data folder
+fi
 
 func ()
 {
 local arch=cnn_word
 local partition=human_annot_only
-local name=${arch}_${partition}_impression
+local name=${arch}_${partition}
 
 #python create_partition.py --partition $partition
-<<COMMENT
 python classifier.py \
     --runtype train \
     --arch $arch \
     --partition $partition \
     --name $name
-COMMENT
 
 python classifier.py \
     --runtype test \

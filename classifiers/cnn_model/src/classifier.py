@@ -48,17 +48,22 @@ class GlobalOpts(object):
         self.classifier_dir = join(self.project_dir, 'classifiers')
         self.cnn_model_dir = join(self.classifier_dir, 'cnn_model')
         self.checkpoint_dir = join(self.cnn_model_dir, 'checkpoints')
-        self.glove_path = join(self.project_dir, 'data', 'glove.42B.300d.txt')
+        self.data_dir = join(self.project_dir, 'data')
+        self.glove_path = join(self.data_dir, 'glove.42B.300d.txt')
         self.archlog_dir = join(self.cnn_model_dir, 'log', name)
         self.partition_dir = join(self.cnn_model_dir, 'partition')
         
-        self.data_path = join(self.project_dir, 'data', 'stanford_pe.tsv')
+        self.report_data_path = join(self.data_dir, 'stanford_pe.tsv')
 
         # Print thresholds
         self.SUMM_CHECK = 50
         self.VAL_CHECK = 200
         self.CHECKPOINT = 10000
-        self.MAX_ITERS = 20000
+        self.MAX_ITERS = 5000
+
+        self.init_lr = 0.001
+        self.decay_factor = 0.1
+        self.decay_steps = 1000
 
         # Common hyperparameters across all models
         self.full_report = False

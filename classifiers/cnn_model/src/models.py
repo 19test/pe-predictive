@@ -38,9 +38,9 @@ class Model(object):
 
     #TODO : apply gradient clipping
     def _train_op_init(self, total_loss, global_step):
-        INITIAL_LEARNING_RATE = 0.001
-        LEARNING_RATE_DECAY_FACTOR = 0.1
-        DECAY_STEPS = 5000
+        INITIAL_LEARNING_RATE = self.opts.init_lr
+        LEARNING_RATE_DECAY_FACTOR = self.opts.decay_factor
+        DECAY_STEPS = self.opts.decay_steps
 
         self.lr = tf.train.exponential_decay(INITIAL_LEARNING_RATE,
                                         global_step,
