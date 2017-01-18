@@ -6,25 +6,8 @@ import argparse
 from os.path import join, dirname
 from reader import Reader
 from classifier import ModelFactory
-from create_partition import get_annot_df
+from create_partition import get_annot_pe
 
-def get_annotated_pe(opts):
-    data = get_annot_df(opts)
-
-    # Filter on PE_PRESENT_label
-    data = data[data['AllowedAnnotation_name'] == 'PE_PRESENT_label']
-
-    # Filter on positive/negative - exclude uncertain
-    data = data[(data['AllowedAnnotation_label'] == 'negative_pe') \
-            | (data['AllowedAnnotation_label'] == 'positive_pe')]
-
-    # Change datset format to short form
-    data['values'] = data['AllowedAnnotation_label'].apply(
-            lambda x : 1 if x == 'positive_pe' else 0)
-    data = data.pivot(index='report_id', 
-            columns='Annotation_annotator', values='values')
-    data = data.reset_index()
-    return data
 
 if __name__ == '__main__':
     tf.set_random_seed(1)
@@ -37,6 +20,10 @@ if __name__ == '__main__':
     parser.add_argument('--name',
             help='Name of directory to place output files in',
             type=str, required=True)
+    # unused
+    parser.add_argument('--partition',
+            help='Way to split data into train/val/test set',
+            default='human_annot_only')
     parser.add_argument('--input_path',
             help='input csv file with reports to process',
             type=str, required=True)
@@ -47,10 +34,7 @@ if __name__ == '__main__':
             help='use full report text - otherwise use impression input')
     args = parser.parse_args()
     factory = ModelFactory(args.arch, args.name)
-    opts = factory.get_opts()
-    opts.partition = 'human_annot_only'
-    opts.full_report = args.full_report
-
+    opts = factory.get_opts(args)
 
     reader = Reader(opts=opts)
     embedding_np = reader.get_embedding(opts.glove_path)

@@ -46,7 +46,8 @@ class Reader:
         '''
         self.opts = opts
         labelX_name = 'rad_report' if opts.full_report else 'report_text'
-        labely_name = 'label'
+        labely_name = ['label_pe', 'label_burden'] \
+                if opts.full_report else ['label']
 
         # Import radiology report data
         report_data = pd.read_csv(opts.report_data_path,sep="\t",index_col=0)
@@ -70,19 +71,19 @@ class Reader:
 
 
         self.trainX = [self._tokenize(report) for report in train_df[labelX_name]]
-        self.trainy = train_df[labely_name].values.tolist()
+        self.trainy = train_df[labely_name].values
         self.valX = [self._tokenize(report) for report in val_df[labelX_name]]
-        self.valy = val_df[labely_name].values.tolist()
+        self.valy = val_df[labely_name].values
         self.testX = [self._tokenize(report) for report in test_df[labelX_name]]
-        self.testy = test_df[labely_name].values.tolist()
+        self.testy = test_df[labely_name].values
         
         # Print stats on split
         print 'Train - Size : %d - Pct_POS : %f' % \
-                (len(self.trainy), np.mean(self.trainy))
+                (len(self.trainy), np.mean(self.trainy, axis=0))
         print 'Val - Size : %d - Pct_POS : %f' % \
-                (len(self.valy), np.mean(self.valy))
+                (len(self.valy), np.mean(self.valy, axis=0))
         print 'Test - Size : %d - Pct_POS : %f' % \
-                (len(self.testy), np.mean(self.testy))
+                (len(self.testy), np.mean(self.testy, axis=0))
 
     # tokenize example data
     def _tokenize(self, report):
@@ -139,14 +140,14 @@ class Reader:
             inds = np.random.choice(range(len(setX)),
                     size=self.opts.batch_size, replace=False)
         batchX = np.zeros((self.opts.batch_size, self.opts.sentence_len))
-        batchy = np.zeros(self.opts.batch_size) 
+        batchy = np.zeros((self.opts.batch_size, sety.shape[1]))
         for i in range(self.opts.batch_size):
             ind = inds[i]
             exampleX = setX[ind]
             if len(exampleX) > self.opts.sentence_len:
                 exampleX = exampleX[0:self.opts.sentence_len]
             batchX[i,0:len(exampleX)] = np.array(exampleX)
-            batchy[i] = sety[ind] 
+            batchy[i,:] = sety[ind,:] 
         return batchX, batchy
 
     def sample_train(self):
@@ -160,7 +161,8 @@ class Reader:
         reports = [preprocess_report(report) for report in report_lst]
         reports = [self._tokenize(report) for report in reports]
         # return batch of sequences
-        return BatchIterator(reports, np.random.randint(2,size=len(reports)),
+        return BatchIterator(reports, 
+                np.random.randint(2,size=(len(reports),self.trainy.shape[1])),
                 self.opts.batch_size, self.opts.sentence_len)
 
     def get_test_batches(self):
@@ -182,11 +184,11 @@ class BatchIterator(object):
         if self.i >= self.get_num_examples():
             raise StopIteration()
         batchX = np.zeros((self.batch_size, self.sentence_len))
-        batchy = np.zeros(self.batch_size)
+        batchy = np.zeros((self.batch_size, self.sety.shape[1]))
         for ind in range(self.batch_size):
             exampleX = self.setX[self.i][0:self.sentence_len]
             batchX[ind,0:len(exampleX)] = exampleX
-            batchy[ind] = self.sety[self.i]
+            batchy[ind,:] = self.sety[self.i,:]
             self.i += 1
             if self.i >= self.get_num_examples():
                 break

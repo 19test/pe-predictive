@@ -32,6 +32,7 @@ class TestReader(unittest.TestCase):
         assert total_size == train_size + val_size + test_size, \
                 [total_size, train_size, val_size, test_size]
 
+    '''
     def test_get_embedding(self):
         embedding_np = self.reader.get_embedding(self.opts.glove_path)
         with open(self.opts.glove_path, 'r') as f:
@@ -45,17 +46,18 @@ class TestReader(unittest.TestCase):
                     assert word_vec.shape == embedding_vec.shape
                     assert (embedding_np[word_id,:] == word_vec).all(),\
                             (np.sum(embedding_np[word_id,:]), np.sum(word_vec))
+    '''
 
     def test_sample_train(self):
         batchX, batchy = self.reader.sample_train()
         assert batchX.shape == (self.opts.batch_size, self.opts.sentence_len)
-        assert batchy.shape == (self.opts.batch_size,)
+        assert batchy.shape == (self.opts.batch_size,1)
         assert np.min(batchy) >= 0 and np.max(batchy) <= 1
 
     def test_sample_val(self):
         batchX, batchy = self.reader.sample_val()
         assert batchX.shape == (self.opts.batch_size, self.opts.sentence_len)
-        assert batchy.shape == (self.opts.batch_size,)
+        assert batchy.shape == (self.opts.batch_size,1)
         assert np.min(batchy) >= 0 and np.max(batchy) <= 1
 
     def test_get_test_batches(self):
@@ -76,7 +78,7 @@ class TestReader(unittest.TestCase):
                 all_batchy = batchy
             else:
                 all_batchX = np.vstack((all_batchX, batchX))
-                all_batchy = np.append(all_batchy, batchy)
+                all_batchy = np.vstack((all_batchy, batchy))
         all_batchX = all_batchX[0:test_batches.get_num_examples(),:]
         all_batchy = all_batchy[0:test_batches.get_num_examples()]
         assert all_batchX.shape == testX.shape

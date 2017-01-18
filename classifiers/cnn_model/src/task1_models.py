@@ -72,6 +72,7 @@ class Model(object):
         Run one training step of SGD 
         Returns : [loss, acc, rmse] of batch
         '''
+        batchy = batchy.flatten()
         step_ops = []
         step_ops.append(self.loss)
         step_ops.append(self.acc)
@@ -87,7 +88,7 @@ class Model(object):
     def predict(self, batchX):
         scores = self.sess.run(self.pred, feed_dict={self.x_in:batchX,
             self.y_in:np.random.rand(self.opts.batch_size), self.keep_prob:1.0})
-        prediction = np.argmax(scores, axis=1)
+        prediction = np.argmax(scores, axis=1).reshape(self.opts.batch_size,1)
         return prediction
 
 class LSTM_Model(Model):

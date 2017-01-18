@@ -25,7 +25,7 @@ fi
 func ()
 {
 local arch=cnn_word
-local partition=human_annot_only
+local partition=full_report_human
 local name=${arch}_${partition}
 <<COMMENT
 #python create_partition.py --partition $partition
