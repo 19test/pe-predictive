@@ -1,3 +1,10 @@
+'''
+Saves file which stores a random partition of a given type to the partition folder
+
+The purpose of this process is to hold the train/val/test sets constant
+when running different models across multiple machines
+'''
+
 import pandas as pd
 import numpy as np
 import argparse
@@ -16,6 +23,16 @@ def save_partition(df, filepath):
     df.to_csv(filepath)
 
 def get_annot_df(opts):
+    '''
+    Returns annotation df in long form with the following columns
+        report_id - unique id for report
+        AllowedAnnotation_name : Type of annotation
+            PE_PRESENT_label, ACUITY, etc...
+        AllowedAnnotation_label : Value of annotation
+        Annotation_annotator : name of annotator
+    Args :
+        opts - global options objects which contains file path structure
+    '''
     # Aggregate all annotation data
     filepath_lst = ['8_mattlungrenMD_annotations.tsv',
             '8_pefinder_annotations.tsv',
@@ -60,8 +77,12 @@ if __name__ == '__main__':
             columns='Annotation_annotator', values='values')
     data = data.reset_index()
 
-    if args.partition == 'pefinder_augment': 
-        # Partition data into training, validation, and test set
+    if args.partition == 'pefinder_augment':
+        '''
+        Test set - all annotations completed by mattlungrenMD with
+                    label being his annotations
+        Train/val set - remaining set with label being output of pefinder
+        '''
         test_df = data[~pd.isnull(data['mattlungrenMD'])]
         test_df['label'] = test_df['mattlungrenMD']
         trainval_df = data[pd.isnull(data['mattlungrenMD'])]
@@ -76,6 +97,11 @@ if __name__ == '__main__':
         val_df = trainval_df[~train_inds]
 
     elif args.partition == 'human_annot_only':
+        '''
+        Only contains set annotated by mattlungrenMD
+        test set - random TEST_PROPORTION of test set
+        train/val set - random split of remainder using TRAIN_PROPORTION
+        '''
         manual_annot = data[~pd.isnull(data['mattlungrenMD'])].reset_index()
         manual_annot['label'] = manual_annot['mattlungrenMD']
         total_size = manual_annot.shape[0]

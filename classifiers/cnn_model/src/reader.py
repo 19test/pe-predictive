@@ -68,15 +68,12 @@ class Reader:
         train_df, val_df, test_df = split_data(report_data,
                 opts.partition_dir, opts.partition)
 
-        # tokenize example data
-        def tokenize(report):
-            return [self.word_to_id[word] for word in report.split(' ')]
 
-        self.trainX = [tokenize(report) for report in train_df[labelX_name]]
+        self.trainX = [self._tokenize(report) for report in train_df[labelX_name]]
         self.trainy = train_df[labely_name].values.tolist()
-        self.valX = [tokenize(report) for report in val_df[labelX_name]]
+        self.valX = [self._tokenize(report) for report in val_df[labelX_name]]
         self.valy = val_df[labely_name].values.tolist()
-        self.testX = [tokenize(report) for report in test_df[labelX_name]]
+        self.testX = [self._tokenize(report) for report in test_df[labelX_name]]
         self.testy = test_df[labely_name].values.tolist()
         
         # Print stats on split
@@ -86,6 +83,10 @@ class Reader:
                 (len(self.valy), np.mean(self.valy))
         print 'Test - Size : %d - Pct_POS : %f' % \
                 (len(self.testy), np.mean(self.testy))
+
+    # tokenize example data
+    def _tokenize(self, report):
+        return [self.word_to_id[word] for word in report.split(' ')]
 
     def get_embedding(self, embedding_path):
         '''
@@ -153,32 +154,40 @@ class Reader:
 
     def sample_val(self):
         return self._sample('val')
-    
-    def get_test_batches(self):
-        class BatchIterator(object):
-            def __init__(self, setX, sety, batch_size, sentence_len):
-                self.setX = setX
-                self.sety = sety
-                self.batch_size = batch_size
-                self.sentence_len = sentence_len
-                self.i = 0
-            def __iter__(self):
-                return self
-            def get_num_examples(self):
-                return len(self.setX)
-            def next(self):
-                if self.i >= self.get_num_examples():
-                    raise StopIteration()
-                batchX = np.zeros((self.batch_size, self.sentence_len))
-                batchy = np.zeros(self.batch_size)
-                for ind in range(self.batch_size):
-                    exampleX = self.setX[self.i][0:self.sentence_len]
-                    batchX[ind,0:len(exampleX)] = exampleX
-                    batchy[ind] = self.sety[self.i]
-                    self.i += 1
-                    if self.i >= self.get_num_examples():
-                        break
-                return batchX, batchy
+   
+    def get_raw_batches(self, report_lst):
+        # convert report_lst to list of word id sequences
+        reports = [preprocess_report(report) for report in report_lst]
+        reports = [self._tokenize(report) for report in reports]
+        # return batch of sequences
+        return BatchIterator(reports, np.random.randint(2,size=len(reports)),
+                self.opts.batch_size, self.opts.sentence_len)
 
+    def get_test_batches(self):
         return BatchIterator(self.testX, self.testy,
                 self.opts.batch_size, self.opts.sentence_len)
+
+class BatchIterator(object):
+    def __init__(self, setX, sety, batch_size, sentence_len):
+        self.setX = setX
+        self.sety = sety
+        self.batch_size = batch_size
+        self.sentence_len = sentence_len
+        self.i = 0
+    def __iter__(self):
+        return self
+    def get_num_examples(self):
+        return len(self.setX)
+    def next(self):
+        if self.i >= self.get_num_examples():
+            raise StopIteration()
+        batchX = np.zeros((self.batch_size, self.sentence_len))
+        batchy = np.zeros(self.batch_size)
+        for ind in range(self.batch_size):
+            exampleX = self.setX[self.i][0:self.sentence_len]
+            batchX[ind,0:len(exampleX)] = exampleX
+            batchy[ind] = self.sety[self.i]
+            self.i += 1
+            if self.i >= self.get_num_examples():
+                break
+        return batchX, batchy

@@ -204,9 +204,12 @@ if __name__ == '__main__':
             result = result[0:test_size]
             gt = gt[0:test_size]
 
+            assert len(result) == test_size
+            assert len(gt) == test_size
             test_acc = np.mean(result == gt)
             test_prec = np.mean(gt[result==1])
             test_recall = np.mean(result[gt==1])
+            print 'stdev : %f' % np.std(result==gt)
             print 'Test Set Evaluation'
             print 'Accuracy : %f' % test_acc
             print 'Precision : %f' % test_prec

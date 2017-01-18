@@ -27,7 +27,7 @@ func ()
 local arch=cnn_word
 local partition=human_annot_only
 local name=${arch}_${partition}
-
+<<COMMENT
 #python create_partition.py --partition $partition
 python classifier.py \
     --runtype train \
@@ -35,12 +35,20 @@ python classifier.py \
     --partition $partition \
     --name $name
 
+COMMENT
 python classifier.py \
     --runtype test \
     --arch $arch \
     --partition $partition \
     --name $name \
 #    -error_analysis
+<<COMMENT
+python run_model.py \
+    --arch $arch \
+    --name $name \
+    --input_path "${PROJ_DIR}/data/stanford_pe.tsv" \
+    --output_path "${PROJ_DIR}/data/pred_file.csv"
+COMMENT
 }
 
 func
