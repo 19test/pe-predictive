@@ -28,15 +28,16 @@ local task_num=2
 local arch=cnn_word
 local partition="task${task_num}_human"
 local name=${arch}_${partition}
-<<COMMENT
+
 python create_partition.py --partition $partition
+
 python classifier.py \
     --task_num $task_num \
     --runtype train \
     --arch $arch \
     --partition $partition \
     --name $name
-COMMENT
+
 python classifier.py \
     --task_num $task_num \
     --runtype test \
@@ -45,7 +46,7 @@ python classifier.py \
     --name $name \
 #    -error_analysis
 
-<<COMMENT
+
 python classifier.py \
     --task_num $task_num \
     --runtype predict \
@@ -53,8 +54,7 @@ python classifier.py \
     --partition $partition \
     --name $name \
     --input_path "${PROJ_DIR}/data/stanford_pe.tsv" \
-    --output_path "${PROJ_DIR}/data/task1_pred_file.csv"
+    --output_path "${PROJ_DIR}/data/task${task_num}_pred_file.csv"
 
-COMMENT
 }
 func

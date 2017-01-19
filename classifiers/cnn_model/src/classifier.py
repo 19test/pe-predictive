@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import argparse
 import os
+from os.path import join
 
 from reader import Reader
 from ModelFactory import ModelFactory
@@ -162,6 +163,14 @@ if __name__ == '__main__':
     elif args.runtype == 'test':
         result, gt = test(model, reader, logger, opts)
         metrics = calculate_metrics(result, gt, task_num=opts.task_num)
+        if opts.task_num == 2:
+            df = pd.DataFrame({
+                'gt_pe':gt[:,0],
+                'gt_burden':gt[:,1],
+                'pred_pe':result[:,0],
+                'pred_burden':result[:,1]
+                })
+            df.to_csv(join(opts.data_dir, 'task2_test.csv'))
 
         print 'Test Set Evaluation'
         for metric in metrics:

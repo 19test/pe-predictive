@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import re
+from collections import defaultdict as dd
 
 from os.path import join
 
@@ -127,15 +128,14 @@ class Reader:
         setX = self.trainX if set_name == 'train' else self.valX
         sety = self.trainy if set_name == 'train' else self.valy
         if balance:
-            assert self.opts.batch_size % 2 == 0
-            pos_inds = np.nonzero(np.array(sety))[0]
-            neg_inds = np.nonzero(1 - np.array(sety))[0]
-            sel_pos = np.random.choice(pos_inds,
-                    size=self.opts.batch_size/2, replace=True)
-            sel_neg = np.random.choice(neg_inds,
-                    size=self.opts.batch_size/2, replace=True)
-            inds = np.append(sel_pos, sel_neg)
-            np.random.shuffle(inds)
+            weight_map = dd(int)
+            for i in range(sety.shape[0]):
+                weight_map[tuple(sety[i,:])] += 1
+            num_elements = len(weight_map)
+            weight_map = {key:(1.0/num_elements)/weight_map[key] for key in weight_map}
+            weights = np.array([weight_map[tuple(sety[i,:])] for i in range(sety.shape[0])])
+            inds = np.random.choice(range(sety.shape[0]),
+                    size=self.opts.batch_size, p=weights)
         else:
             inds = np.random.choice(range(len(setX)),
                     size=self.opts.batch_size, replace=False)
