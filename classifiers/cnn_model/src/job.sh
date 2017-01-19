@@ -24,31 +24,37 @@ fi
 
 func ()
 {
+local task_num=2
 local arch=cnn_word
-local partition=full_report_human
+local partition="task${task_num}_human"
 local name=${arch}_${partition}
 <<COMMENT
-#python create_partition.py --partition $partition
+python create_partition.py --partition $partition
 python classifier.py \
+    --task_num $task_num \
     --runtype train \
     --arch $arch \
     --partition $partition \
     --name $name
-
 COMMENT
 python classifier.py \
+    --task_num $task_num \
     --runtype test \
     --arch $arch \
     --partition $partition \
     --name $name \
 #    -error_analysis
+
 <<COMMENT
-python run_model.py \
+python classifier.py \
+    --task_num $task_num \
+    --runtype predict \
     --arch $arch \
+    --partition $partition \
     --name $name \
     --input_path "${PROJ_DIR}/data/stanford_pe.tsv" \
-    --output_path "${PROJ_DIR}/data/pred_file.csv"
+    --output_path "${PROJ_DIR}/data/task1_pred_file.csv"
+
 COMMENT
 }
-
 func

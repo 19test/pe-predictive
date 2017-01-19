@@ -32,10 +32,12 @@ class GlobalOpts(object):
         self.sentence_len = 1500
 
     def add_args(self, args):
-        self.full_report = args.full_report
+        assert args.task_num == 1 or args.task_num == 2
+        self.task_num = args.task_num
+        self.full_report = True if args.task_num == 2 else False
         # full report - 99.5 percentile - 2026 words
         # impressions - 99.5 percentile -275 words
-        self.sentence_len = 2000 if args.full_report else 300
+        self.sentence_len = 2000 if self.full_report else 300
         self.partition = args.partition
         self.error_analysis = args.error_analysis
 

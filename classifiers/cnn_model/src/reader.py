@@ -78,12 +78,12 @@ class Reader:
         self.testy = test_df[labely_name].values
         
         # Print stats on split
-        print 'Train - Size : %d - Pct_POS : %f' % \
-                (len(self.trainy), np.mean(self.trainy, axis=0))
-        print 'Val - Size : %d - Pct_POS : %f' % \
-                (len(self.valy), np.mean(self.valy, axis=0))
-        print 'Test - Size : %d - Pct_POS : %f' % \
-                (len(self.testy), np.mean(self.testy, axis=0))
+        print 'Train - Size : %d - Pct_POS : %s' % \
+                (len(self.trainy), str(np.mean(self.trainy, axis=0)))
+        print 'Val - Size : %d - Pct_POS : %s' % \
+                (len(self.valy), str(np.mean(self.valy, axis=0)))
+        print 'Test - Size : %d - Pct_POS : %s' % \
+                (len(self.testy), str(np.mean(self.testy, axis=0)))
 
     # tokenize example data
     def _tokenize(self, report):
