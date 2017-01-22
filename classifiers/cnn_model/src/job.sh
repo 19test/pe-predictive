@@ -24,12 +24,13 @@ fi
 
 func ()
 {
-local task_num=2
+local task_num=1
 local arch=cnn_word
 local partition="task${task_num}_human"
 local name=${arch}_${partition}
 
-python create_partition.py --partition $partition
+<<COMMENT
+#python create_partition.py --partition $partition
 
 python classifier.py \
     --task_num $task_num \
@@ -45,13 +46,10 @@ python classifier.py \
     --partition $partition \
     --name $name \
 #    -error_analysis
-
-
-python classifier.py \
+COMMENT
+python prediction.py \
     --task_num $task_num \
-    --runtype predict \
     --arch $arch \
-    --partition $partition \
     --name $name \
     --input_path "${PROJ_DIR}/data/stanford_pe.tsv" \
     --output_path "${PROJ_DIR}/data/task${task_num}_pred_file.csv"

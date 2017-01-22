@@ -34,12 +34,16 @@ class GlobalOpts(object):
     def add_args(self, args):
         assert args.task_num == 1 or args.task_num == 2
         self.task_num = args.task_num
-        self.full_report = True if args.task_num == 2 else False
+        self.full_report = True \
+                if args.task_num == 2 else False
         # full report - 99.5 percentile - 2026 words
         # impressions - 99.5 percentile -275 words
-        self.sentence_len = 2000 if self.full_report else 300
-        self.partition = args.partition
-        self.error_analysis = args.error_analysis
+        self.sentence_len = 2000 \
+                if self.full_report else 300
+        self.partition = args.partition \
+                if hasattr(args, 'partition') else None
+        self.error_analysis = args.error_analysis \
+                if hasattr(args, 'error_analysis') else False
 
 class WordCNNOpts(GlobalOpts):
     def __init__(self, name):

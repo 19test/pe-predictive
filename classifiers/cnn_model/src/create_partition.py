@@ -160,23 +160,19 @@ if __name__ == '__main__':
         label_lst = ['label']
         total_size = manual_annot.shape[0]
 
-        trainval_df, test_df = random_split(manual_annot,
-                proportion=(1-TEST_PROPORTION))
-        train_df, val_df = random_split(trainval_df,
+        train_df, val_df = random_split(manual_annot,
                 proportion=TRAIN_PROPORTION)
         assert train_df.shape[0] + val_df.shape[0] \
-                + test_df.shape[0] == total_size
+                == total_size
     elif args.partition == 'task2_human':
         data = import_task2_data(opts)
         data['label_pe'] = data['LOOKING_FOR_PE_label']
         data['label_burden'] = data['PE_BURDEN_label']
         label_lst = ['label_pe', 'label_burden']
-        trainval_df, test_df = random_split(data,
-                proportion=(1-TEST_PROPORTION))
-        train_df, val_df = random_split(trainval_df,
+        train_df, val_df = random_split(data,
                 proportion=TRAIN_PROPORTION)
         assert train_df.shape[0] + val_df.shape[0] \
-                + test_df.shape[0] == data.shape[0]
+                == data.shape[0]
     else:
         raise Exception('Split type unsupported : %s' % args.partition)
 
@@ -187,4 +183,3 @@ if __name__ == '__main__':
 
     save_partition(train_df, label_lst, join(out_dir, 'train.csv'))
     save_partition(val_df, label_lst, join(out_dir, 'val.csv')) 
-    save_partition(test_df, label_lst, join(out_dir, 'test.csv'))

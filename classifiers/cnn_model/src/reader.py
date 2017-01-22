@@ -28,24 +28,44 @@ def preprocess_report(report_text):
 def split_data(data, partition_dir, partition):
     train_partition = pd.read_csv(join(partition_dir, partition, 'train.csv'))
     val_partition = pd.read_csv(join(partition_dir, partition, 'val.csv'))
-    test_partition = pd.read_csv(join(partition_dir, partition, 'test.csv'))
     train_df = data.merge(train_partition, on='report_id')
     val_df = data.merge(val_partition, on='report_id')
-    test_df = data.merge(test_partition, on='report_id')
-    return train_df, val_df, test_df
+    return train_df, val_df
 
 
 class Reader:
     '''
-    Input class that splits dataset into train/val/test and tokenizes
+    Input class that splits dataset into train/val and tokenizes
     the words into embedded vectors. Also handles importing of Glove vectors.
     '''
 
-    def __init__(self, opts):
+    def __init__(self, opts, inputX=None):
+        self.opts = opts
+        assert opts.task_num in [1,2]
+        self.output_dim = 1 if opts.task_num == 1 else 2
+        if inputX is None:
+            self._init_training(opts)
+        else:
+            self._generate_word_mappings(inputX)
+
+    def _generate_word_mappings(self, report_list):
+        # Preprocess report_data to remove artifact symbols
+        report_list = [preprocess_report(report) for report in report_list]
+        # Get set of all words across all reports
+        self.word_to_id = {}
+        self.id_to_word = {}
+        word_counter = 0
+        for report in report_list:
+            for word in report.split(' '):
+                if word not in self.word_to_id:
+                    self.word_to_id[word] = word_counter
+                    self.id_to_word[word_counter] = word
+                    word_counter += 1
+
+    def _init_training(self, opts):
         '''
         Creates a reader instance to sample radiology reports
         '''
-        self.opts = opts
         labelX_name = 'rad_report' if opts.full_report else 'report_text'
         labely_name = ['label_pe', 'label_burden'] \
                 if opts.full_report else ['label']
@@ -53,38 +73,23 @@ class Reader:
         # Import radiology report data
         report_data = pd.read_csv(opts.report_data_path,sep="\t",index_col=0)
 
-        # Preprocess report_data to remove artifact symbols
+        self._generate_word_mappings(report_data[labelX_name].values)
+
         report_data[labelX_name] = report_data[labelX_name].apply(
                 lambda x : preprocess_report(x))
-        # Get set of all words across all reports
-        self.word_to_id = {}
-        self.id_to_word = {}
-        word_counter = 0
-        for report in report_data[labelX_name].values:
-            for word in report.split(' '):
-                if word not in self.word_to_id:
-                    self.word_to_id[word] = word_counter
-                    self.id_to_word[word_counter] = word
-                    word_counter += 1
-
-        train_df, val_df, test_df = split_data(report_data,
+        train_df, val_df = split_data(report_data,
                 opts.partition_dir, opts.partition)
-
 
         self.trainX = [self._tokenize(report) for report in train_df[labelX_name]]
         self.trainy = train_df[labely_name].values
         self.valX = [self._tokenize(report) for report in val_df[labelX_name]]
         self.valy = val_df[labely_name].values
-        self.testX = [self._tokenize(report) for report in test_df[labelX_name]]
-        self.testy = test_df[labely_name].values
         
         # Print stats on split
         print 'Train - Size : %d - Pct_POS : %s' % \
                 (len(self.trainy), str(np.mean(self.trainy, axis=0)))
         print 'Val - Size : %d - Pct_POS : %s' % \
                 (len(self.valy), str(np.mean(self.valy, axis=0)))
-        print 'Test - Size : %d - Pct_POS : %s' % \
-                (len(self.testy), str(np.mean(self.testy, axis=0)))
 
     # tokenize example data
     def _tokenize(self, report):
@@ -132,8 +137,10 @@ class Reader:
             for i in range(sety.shape[0]):
                 weight_map[tuple(sety[i,:])] += 1
             num_elements = len(weight_map)
-            weight_map = {key:(1.0/num_elements)/weight_map[key] for key in weight_map}
-            weights = np.array([weight_map[tuple(sety[i,:])] for i in range(sety.shape[0])])
+            weight_map = {key:(1.0/num_elements)/weight_map[key] \
+                    for key in weight_map}
+            weights = np.array([weight_map[tuple(sety[i,:])] \
+                    for i in range(sety.shape[0])])
             inds = np.random.choice(range(sety.shape[0]),
                     size=self.opts.batch_size, p=weights)
         else:
@@ -162,11 +169,11 @@ class Reader:
         reports = [self._tokenize(report) for report in reports]
         # return batch of sequences
         return BatchIterator(reports, 
-                np.random.randint(2,size=(len(reports),self.trainy.shape[1])),
+                np.random.randint(2,size=(len(reports),self.output_dim)),
                 self.opts.batch_size, self.opts.sentence_len)
 
     def get_test_batches(self):
-        return BatchIterator(self.testX, self.testy,
+        return BatchIterator(self.valX, self.valy,
                 self.opts.batch_size, self.opts.sentence_len)
 
 class BatchIterator(object):
