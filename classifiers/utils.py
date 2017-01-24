@@ -2,6 +2,7 @@
 
 import radnlp
 
+import numpy as np
 import pyConTextNLP.pyConTextGraph as pyConText
 import pyConTextNLP.itemData as itemData
 
@@ -51,6 +52,16 @@ def getRx(pe_result_series,positive_label=None):
                 rx.append("Neg")
     return rx
     
+def calculateMetrics(y_true, y_pred):
+    '''
+    Calculates accuracy, precision, and recall of model from predictions
+    '''
+    y_true = np.array([1 if y=='Pos' else 0 for y in y_true])
+    y_pred = np.array([1 if y=='Pos' else 0 for y in y_pred])
+    accuracy = np.mean(y_true == y_pred)
+    precision = np.mean(y_true[y_pred == 1])
+    recall = np.mean(y_pred[y_true == 1])
+    return accuracy, precision, recall
 
 ### CHAPMAN FUNCTIONS ###################################################################
 

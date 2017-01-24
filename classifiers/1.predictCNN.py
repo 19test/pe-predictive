@@ -31,7 +31,7 @@ data = data.dropna(subset=['impression'])
 data['pe_rslt'] = predict(data['impression'].values)
 
 # Results are at data['pe rslt'][0].classification_result
-pickle.dump(data,open('results/chapman-cnn-results.pkl','wb'))
+data.to_csv('results/chapman-cnn-results.csv', index=False)
 
 ############################################################################
 # CNN Word on Stanford Data
@@ -44,4 +44,4 @@ sdata = sdata.dropna(subset=['impression']) #N=944
 sdata['pe_rslt'] = predict(sdata['impression'].values)
 
 # Results are at data['pe rslt'][0].classification_result
-pickle.dump(sdata,open('results/stanford-cnn-results.pkl','wb'))
+sdata.to_csv('results/stanford-cnn-results.csv', index=False)
