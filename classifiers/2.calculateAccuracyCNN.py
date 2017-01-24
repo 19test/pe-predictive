@@ -6,12 +6,9 @@ from utils import makeConfusion, calculateMetrics
 
 ################################################################
 # Stanford data (N=944) classified using PE Finder
-# How many Stanford cases did PEFinger get right?
+# How many Stanford cases did CNNWord Model get right?
 ################################################################
 
-
-# makeConfusion(y_true,y_pred,labels) 
-# labels is the set of possible labels
 
 # How many did we get right?
 sdata = pd.read_csv('results/stanford-cnn-results.csv')
@@ -28,7 +25,7 @@ print('Accuracy: %f Precision: %f Recall: %f'%calculateMetrics(y_true, y_pred))
 
 ################################################################
 # Chapman data (N=860)-1 nan classified using PE Finder
-# How many cases did PEFinger get right?
+# How many cases did CNNWord Model get right?
 ################################################################
 
 
