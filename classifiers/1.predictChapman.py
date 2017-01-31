@@ -10,8 +10,9 @@ Accuracy calculations are in 2.calculateAccuracy.py
 
 import pandas
 import pickle
+import os
 
-from utils import analyze_result
+from utils import analyze_report
 
 # Let's make sure we are working from CODE HOME
 CODE_HOME = os.environ["CODE_HOME"]
@@ -33,7 +34,6 @@ data.apply(lambda x: analyze_report(x["impression"],
                                      kb["targets"],
                                      kb["rules"],
                                      kb["schema"]), axis=1)
-
 # Results are at data['pe rslt'][0].classification_result
 pickle.dump(data,open('results/chapman-pe-results.pkl','wb'))
 

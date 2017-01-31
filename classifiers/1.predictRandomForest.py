@@ -7,8 +7,9 @@
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import cross_val_score, \
-    cross_val_predict, train_test_set, Kfold
+    cross_val_predict, KFold
 from sklearn import ensemble
+from utils import makeConfusion
 
 import pandas
 import pickle
@@ -317,6 +318,7 @@ uncertain["chapman|uncertainty|impression"] = predictPE(reports=reports,y=y)
 # Save all hist results
 results['uncertainty'] = uncertain
 
+print(results.keys())
 pickle.dump(results,open('results/chapman_stanford_results.pkl','wb'))
 
 ###############################################################
